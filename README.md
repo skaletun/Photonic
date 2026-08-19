@@ -1,120 +1,77 @@
 # Photonic
 
-Клиентский ресемплер растровых изображений. Только классические методы — без нейросетей и без отправки файла на сервер. По умолчанию работает **алгоритм Photonic**: OKLab, сигмоида против ореолов, резкая светлота и мягкая цветность.
+**Свет без нейросетей. Ядро на виду. Файл никуда не уходит.**
 
-Стек: Next.js (App Router, static export), TypeScript, React. Ресемплинг идёт в браузере (Canvas + Web Worker). Интерфейс: RU / EN, PWA (офлайн-оболочка).
+Photonic — увеличитель и ресемплер растра в браузере. Откройте снимок, выберите фильтр, заберите файл другого размера. Нет аккаунта, нет облака, нет «ИИ-улучшения»: только классическая интерполяция и эталонный пайплайн **Photonic**.
 
-Client-side raster resampler. Classical methods only — no neural nets, no upload. Default kernel is **Photonic**: OKLab, sigmoid against halos, sharp lightness, softer chroma. Stack: Next.js App Router static export. UI: RU / EN, installable PWA.
+[Открыть Photonic](https://skaletun.github.io/Photonic/) · [GitHub](https://github.com/skaletun/Photonic)
 
-## Запуск / Run
+Light without neural nets. The kernel is in view. The file stays on this device. Photonic is a browser enlarger: drop a JPEG, PNG, WebP, BMP or GIF, pick a kernel, export. No upload. The default **Photonic** kernel works in OKLab — sharp lightness, quieter colour, fewer halos than textbook Lanczos.
 
-Нужен HTTP: модульный Web Worker и service worker не стартуют с `file://`. HTTPS (или localhost) нужен и для установки PWA.
+## Зачем это, а не апскейл из соцсети
 
-HTTP is required: the module Worker and service worker will not start from `file://`. HTTPS (or localhost) is required to install the PWA.
+Нейросеть дорисовывает то, чего не было. Photonic меняет сетку пикселей честно: вы видите форму ядра, сравниваете «до / после» и сетку всех фильтров, удерживаете пробел, чтобы снова увидеть исходник.
+
+- Снимок не уходит с устройства.
+- Эталон Photonic: линейный свет, OKLab, сигмоида против ореолов, Kaiser-sinc по светлоте, Mitchell по цветности, NoHalo.
+- Рядом — классика: nearest, bilinear, bicubic, Lanczos, sinc (Hann), B-spline.
+- RU / EN, светлая тема по умолчанию, ставится как PWA. Офлайн кэшируется оболочка, не ваши фотографии.
+
+## Как пользоваться
+
+1. Перетащите файл, вставьте его или нажмите Ctrl+O.
+2. Слева выберите ядро. **Photonic** — для фото, графики и текста. Пиксель-арт — nearest и целый 2× / 4×.
+3. Справа задайте размер в пикселях, процентах или профилем ½ / 2× / 4×.
+4. Сравните слайдером, рядом или сеткой ядер. Колесо — зум.
+5. Экспорт: PNG, JPEG, WebP или как у исходника. Ctrl+S сохраняет файл.
+
+На телефоне: превью сверху, ядра чипами, **Экспорт** липкой кнопкой внизу.
+
+## FAQ
+
+Полный список — в самом приложении, якорь [#faq](https://skaletun.github.io/Photonic/#faq). Коротко:
+
+- **Это ИИ?** Нет. Именованные ядра и цветовой пайплайн, не обученная модель.
+- **Куда уходит файл?** Никуда. Счёт идёт во вкладке.
+- **GIF?** Первый кадр. GIF и BMP при экспорте становятся PNG.
+- **Почему не открывается с диска?** Worker не стартует с `file://`. Нужен HTTPS или localhost.
+
+## Контакты
+
+Человек, не форма.
+
+- GitHub: [skaletun](https://github.com/skaletun)
+- Почта: [ettsonskal@gmail.com](mailto:ettsonskal@gmail.com)
+- Telegram: [t.me/skaletun](https://t.me/skaletun)
+
+## Поддержать проект
+
+Без рекламы и телеметрии. Кофе или просто спасибо — чтобы увеличитель оставался на виду. Файл по-прежнему никуда не уходит.
+
+- [Donatex](https://donatex.gg/donate/skaletun)
+- [DonationAlerts](https://www.donationalerts.com/r/skaletun)
+- [Т-Банк](https://www.tbank.ru/cf/4mmmJbR1Vox)
+
+## Для тех, кто собирает из исходников
+
+Нужен HTTP: модульный worker и service worker не живут на `file://`.
 
 ```bash
-cd Photonic
 npm install
 npm run dev
 ```
 
-Откройте http://localhost:3000/
-
-Сборка статики в `out/`:
-
-```bash
-npm run build
-npm start
-```
-
-`npm start` раздаёт папку `out` (не `next start` — при `output: "export"` сервера Next нет). Локальная сборка без `basePath`; на GitHub Pages префикс берётся из имени репозитория.
-
-Для проверки nearest на пиксель-арте можно взять [`public/assets/checker.png`](public/assets/checker.png) (16×16) и профиль **4×**. Photonic на клетках будет чуть мягче — так и задумано.
-
-Поддержка: актуальные Chrome, Firefox, Safari, Edge.
-
-## GitHub Pages
-
-Статика собирается в CI и выкладывается из `out/`. В git не попадают `node_modules/`, `.next/`, `out/`, `.env*`, кэши и папки редактора (`.cursor/`, `.vscode/`, `.idea/`). В репозиторий нужен `package-lock.json`.
-
-1. Создайте репозиторий, залейте ветку `main` (не коммитьте сборку — её делает Actions).
-2. Settings → Pages → **Source: GitHub Actions**.
-3. Workflow `.github/workflows/pages.yml` на push в `main`: `npm ci`, тесты, `GITHUB_PAGES=true` → `npm run build`, деплой артефакта `out`.
-4. Адрес проектного сайта: `https://<user>.github.io/<repo>/`. Для репозитория `user.github.io` или своего домена в корне сайта задайте в job `NEXT_PUBLIC_BASE_PATH: ""`.
-
-После деплоя Jekyll не трогает `_next` (в `out` пишется `.nojekyll`).
-
-GitHub Pages: CI builds `out/` and deploys it. Do not commit `node_modules`, `.next`, or `out`. Enable Pages → Source: GitHub Actions. Project sites get `basePath=/<repo>`; a user site (`*.github.io`) stays at `/`.
-
-## PWA
-
-После `npm run build` и раздачи по HTTPS браузер может предложить установку. На iPhone: Share → Add to Home Screen. Офлайн кэшируется оболочка (HTML/CSS/JS/шрифты/иконки), не ваши снимки. Ресемплинг по-прежнему локальный.
-
-After a HTTPS deploy, Chrome/Edge can install Photonic. On iPhone use Share → Add to Home Screen. The service worker caches the app shell only — not user photos. Resampling stays on-device.
-
-## Как пользоваться / How to use
-
-1. Откройте JPEG / PNG / WebP / BMP / GIF (кнопка, Ctrl+O, перетаскивание или вставка). У GIF берётся первый кадр.
-2. Слева выберите ядро. **Photonic** — эталон для фото и графики. График — форма фильтра.
-3. Справа задайте размер в пикселях, процентах (10–1000%) или профилем ½ / 2× / 4×. Пропорции по умолчанию включены.
-4. Сравните «до / после» слайдером, рядом или сеткой всех ядер. Колесо — зум, пробел — исходник.
-5. Экспорт: PNG, JPEG, WebP или формат исходника (GIF и BMP уходят в PNG). Ctrl+S сохраняет файл.
-
-На телефоне: превью сверху, ядра чипами, размер и **Экспорт** снизу (липкая кнопка над индикатором домой).
-
-Settings (kernel, locale, theme, color, unsharp, format) are stored in `localStorage`. Language follows the browser on first visit (`ru*` → Russian, otherwise English).
-
-### Какое ядро брать / Which kernel
-
-- **Фотография, графика, текст:** Photonic. Линейный свет встроен, переключатель sRGB отключается.
-- **Пиксель-арт:** nearest и целый масштаб 2× / 4×.
-- **Сравнить звон:** Lanczos — классика без сигмоиды, ореолы виднее.
-- **Шумное фото без ореолов:** B-spline.
-- **Экспертно:** sinc (Hann); окно `a` у Lanczos/sinc 2–4. Bicubic — стандарт для простого апскейла.
-
-### Что делает Photonic
-
-Это пайплайн, не одно ядро: sRGB → линейный RGB → OKLab → нормированная сигмоида на L (k = 6.5, как у ImageMagick / Robidoux) → Kaiser-sinc по светлоте и Mitchell по цветности → NoHalo по ближайшим соседям (не по всему окну ядра) → обратно в sRGB. Цветные ореолы гасятся, контур остаётся в светлоте.
-
-## Горячие клавиши / Shortcuts
-
-- **Ctrl/Cmd+O** — открыть / open
-- **Ctrl/Cmd+S** — экспорт / export
-- **Ctrl/Cmd+Z** — отмена настроек / undo settings
-- **1–7** — ядра по порядку (1 = Photonic)
-- **+ / −** — зум / zoom
-- **Space** — исходник, пока удерживаете / hold for original
-
-## Производительность и лимиты / Limits
-
-Тяжёлая математика идёт в Web Worker по полосам, интерфейс не должен зависать. Photonic тяжелее чистого Lanczos из‑за OKLab и двух ядер.
-
-- Если результат ≤ ~8 Мп, превью — полный кадр.
-- Если больше — обзор (длинная сторона ≤ 2048) тем же ядром и лупа 1:1 по области просмотра. Полный размер считается при экспорте.
-- Предупреждение около 80 Мп (Safari). Отказ выше 120 Мп или если сторона > 16384 / площадь больше лимита canvas.
-
-## Архитектура / Layout
-
-```
-src/app/          Next.js layout and page
-src/components/   React shell (mast, preview, kernels, inspector)
-src/lib/i18n/     EN / RU dictionaries
-src/lib/resample/ kernels, Photonic pipeline, worker
-src/lib/io/       decode and export
-src/styles/       tokens and tool layout
-public/fonts/     Instrument Serif, IBM Plex Sans (SIL OFL)
-public/icons/     PWA icons
-public/manifest.webmanifest
-public/sw.js      app-shell service worker
-tests/            Vitest (kernels + i18n)
-```
-
-Проверка / checks:
+http://localhost:3000/ — локально без `basePath`. Статика:
 
 ```bash
 npm test
 npx tsc --noEmit
 npm run build
+npm start
 ```
 
-Шрифты лежат в `public/fonts/` (SIL OFL), без запроса к Google Fonts в рантайме.
+`npm start` раздаёт `out/` (`next start` при `output: "export"` нет). GitHub Pages: Settings → Pages → Source: GitHub Actions. Workflow на `main` ставит `GITHUB_PAGES=true`, префикс `/<repo>/`, в `out` пишется `.nojekyll`. В git не кладите `node_modules/`, `.next/`, `out/`.
+
+Проверка nearest: [`public/assets/checker.png`](public/assets/checker.png) и профиль **4×**. Photonic на клетке чуть мягче — так задумано.
+
+Браузеры: актуальные Chrome, Firefox, Safari, Edge. Шрифты в `public/fonts/` (SIL OFL), без запроса к Google Fonts.

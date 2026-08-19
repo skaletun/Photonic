@@ -11,6 +11,55 @@ export const en = {
   "mast.langGroup": "Language",
   "mast.langEn": "English",
   "mast.langRu": "Russian",
+  "mast.nav": "On this page",
+  "mast.faq": "FAQ",
+  "mast.contacts": "Contacts",
+  "mast.support": "Support",
+
+  "faq.kicker": "Before you drop a file",
+  "faq.title": "FAQ",
+  "faq.q1": "Does the picture leave this device?",
+  "faq.a1":
+    "No. Decode, resample, and export all run in this tab. There is no upload, no account, and no server in the path.",
+  "faq.q2": "Is this AI upscaling?",
+  "faq.a2":
+    "No. Photonic is classical resampling — named kernels you can plot. The Photonic kernel is a colour pipeline, not a trained model.",
+  "faq.q3": "Which kernel should I start with?",
+  "faq.a3":
+    "Photonic for photographs, graphics, and type. Nearest neighbour for pixel art at integer 2× or 4×. Lanczos if you want classic ringing next to Photonic.",
+  "faq.q4": "Why will it not start from a downloaded HTML file?",
+  "faq.a4":
+    "The resample worker is a module. Browsers block that, and the service worker, off a file:// page. Open the site over HTTPS or localhost.",
+  "faq.q5": "What happens to an animated GIF?",
+  "faq.a5": "Only the first frame is read. GIF and BMP sources export as PNG.",
+  "faq.q6": "How large can the export be?",
+  "faq.a6":
+    "Full preview up to about 8 megapixels. Larger frames get an overview plus a 1:1 loupe; the full size is computed on export. The app warns near 80 MP and refuses past 120 MP or a side over 16 384 px.",
+  "faq.q7": "Does Photonic work offline?",
+  "faq.a7":
+    "After an HTTPS visit the shell can be installed and cached. Your photos are not stored in that cache. Kernel, language, and theme stay in localStorage on this device.",
+
+  "contacts.kicker": "A person, not a form",
+  "contacts.title": "Contacts",
+  "contacts.lead": "A question about the enlarger, a ringing print, or a bug — write.",
+  "contacts.github": "GitHub",
+  "contacts.githubHint": "skaletun",
+  "contacts.mail": "Email",
+  "contacts.mailHint": "ettsonskal@gmail.com",
+  "contacts.telegram": "Telegram",
+  "contacts.telegramHint": "t.me/skaletun",
+  "contacts.external": "Opens in a new tab",
+
+  "support.kicker": "No ads, no telemetry",
+  "support.title": "Support the project",
+  "support.lead":
+    "Photonic stays a free local tool. A coffee, a print run, or a thank-you keeps the kernel in view.",
+  "support.donatex": "Donatex",
+  "support.alerts": "DonationAlerts",
+  "support.tbank": "T-Bank",
+  "support.note": "The file still never leaves the machine. Support is optional.",
+
+  "footer.rights": "© {year} skaletun. All rights reserved.",
 
   "empty.kicker": "Image enlarger",
   "empty.title": "Drop an image",

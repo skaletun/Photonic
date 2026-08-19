@@ -32,6 +32,7 @@ import { Enlarger } from "./Enlarger";
 import { KernelRail } from "./KernelRail";
 import { Mast } from "./Mast";
 import { Preview, type PreviewHandle } from "./Preview";
+import { SiteNotes } from "./SiteNotes";
 
 type HistoryEntry = {
   snap: SettingsSnap;
@@ -500,6 +501,7 @@ export function PhotonicApp() {
             onExport={() => void exportResult()}
           />
         </main>
+        <SiteNotes />
         <input
           ref={fileInputRef}
           className="sr-only"

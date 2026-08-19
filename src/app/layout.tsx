@@ -7,6 +7,7 @@ import "@/styles/base.css";
 import "@/styles/shell.css";
 import "@/styles/controls.css";
 import "@/styles/preview.css";
+import "@/styles/site-notes.css";
 
 export const metadata: Metadata = {
   title: "Photonic — classical image resampler",

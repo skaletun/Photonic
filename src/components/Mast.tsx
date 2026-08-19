@@ -25,11 +25,18 @@ export function Mast() {
       <a className="wordmark" href="./">
         Photonic
       </a>
-      <p className="lede">
-        {t("mast.ledeStart")}
-        <em>{t("mast.ledeEm")}</em>
-        {t("mast.ledeEnd")}
-      </p>
+      <div className="mast-mid">
+        <p className="lede">
+          {t("mast.ledeStart")}
+          <em>{t("mast.ledeEm")}</em>
+          {t("mast.ledeEnd")}
+        </p>
+        <nav className="mast-nav" aria-label={t("mast.nav")}>
+          <a href="#faq">{t("mast.faq")}</a>
+          <a href="#contacts">{t("mast.contacts")}</a>
+          <a href="#support">{t("mast.support")}</a>
+        </nav>
+      </div>
       <div className="mast-actions">
         <div className="lang-switch" role="group" aria-label={t("mast.langGroup")}>
           <button
