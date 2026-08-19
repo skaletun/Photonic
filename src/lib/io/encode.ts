@@ -8,7 +8,15 @@ import { AppError } from "../errors";
 
 export function formatToMime(format: ExportFormat, originalMime: string) {
   if (format === "original") {
-    return originalMime === "image/gif" || originalMime === "image/bmp" ? "image/png" : originalMime;
+    if (originalMime === "image/gif" || originalMime === "image/bmp") return "image/png";
+    if (
+      originalMime === "image/heic" ||
+      originalMime === "image/heif" ||
+      originalMime === "image/avif"
+    ) {
+      return "image/jpeg";
+    }
+    return originalMime;
   }
   if (format === "png") return "image/png";
   if (format === "jpeg") return "image/jpeg";

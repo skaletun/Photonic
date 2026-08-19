@@ -4,17 +4,54 @@ import type { ExportFormat } from "@/lib/config";
 import { MAX_PERCENT, MAX_SIDE, MIN_PERCENT } from "@/lib/config";
 import { formatToMime } from "@/lib/io/encode";
 import { clampInt } from "@/lib/limits";
+import { CLIP_WARN } from "@/lib/meter";
+import {
+  DPI_PRESETS,
+  convertPaper,
+  fitInsidePaper,
+  paperPresets,
+  paperToPx,
+  pxToIn,
+  pxToMm,
+  type PrintUnit,
+} from "@/lib/print";
 import { useAppState } from "./AppStateContext";
 import { useT } from "@/hooks/useT";
 
 type Props = {
   beforeChange: () => void;
-  onDestChange: (width: number, height: number) => void;
+  onDestChange: (width: number, height: number, paper?: { width: number; height: number } | null) => void;
   onOpen: () => void;
   onExport: () => void;
+  onExportAll: () => void;
+  onExportEach: () => void;
+  onCopyRecipe: () => void;
+  onQueueIndex: (index: number) => void;
+  onQueueRemove: (index: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  onInstall: () => void;
 };
 
-export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props) {
+function formatPaper(value: number, unit: PrintUnit) {
+  if (!Number.isFinite(value)) return "";
+  return unit === "mm" ? String(Number(value.toFixed(1))) : String(Number(value.toFixed(2)));
+}
+
+export function Enlarger({
+  beforeChange,
+  onDestChange,
+  onOpen,
+  onExport,
+  onExportAll,
+  onExportEach,
+  onCopyRecipe,
+  onQueueIndex,
+  onQueueRemove,
+  onUndo,
+  onRedo,
+  onInstall,
+}: Props) {
   const { state, dispatch } = useAppState();
   const { t: tr } = useT();
   const photonic = state.kernel === "photonic";
@@ -22,13 +59,34 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
   const qualityHidden = mime === "image/png";
   const aspect = state.sourceHeight ? state.sourceWidth / state.sourceHeight : 1;
   const percent = state.hasSource ? Math.round((state.destW / state.sourceWidth) * 100) : 100;
+  const paperW =
+    state.paperW ??
+    (state.hasSource ? (state.printUnit === "mm" ? pxToMm(state.destW, state.dpi) : pxToIn(state.destW, state.dpi)) : 0);
+  const paperH =
+    state.paperH ??
+    (state.hasSource ? (state.printUnit === "mm" ? pxToMm(state.destH, state.dpi) : pxToIn(state.destH, state.dpi)) : 0);
+  const maxBin = state.meter ? Math.max(1, ...state.meter.bins) : 1;
+  const clipPct = state.meter ? (state.meter.clipHigh + state.meter.clipLow) * 100 : 0;
+  const iccKey =
+    state.iccKind === "srgb" ? "enlarger.iccSrgb" : state.iccKind === "other" ? "enlarger.iccOther" : "enlarger.iccNone";
 
   function applyProfile(scale: number) {
     if (!state.hasSource) return;
     onDestChange(
       Math.max(1, Math.round(state.sourceWidth * scale)),
       Math.max(1, Math.round(state.sourceHeight * scale)),
+      null,
     );
+  }
+
+  function applyPaper(width: number, height: number, unit = state.printUnit, dpi = state.dpi, lockAspect = state.lockAspect) {
+    if (!state.hasSource) {
+      dispatch({ type: "setPaper", width, height });
+      return;
+    }
+    const px = paperToPx(width, height, unit, dpi);
+    const dest = fitInsidePaper(state.sourceWidth, state.sourceHeight, px.width, px.height, lockAspect);
+    onDestChange(dest.width, dest.height, { width, height });
   }
 
   return (
@@ -41,6 +99,33 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
       <p className="status-line" role="status" data-kind={state.statusKind || undefined}>
         {tr(state.status.key, state.status.params)}
       </p>
+
+      {state.queueNames.length ? (
+        <ul className="queue" aria-label={tr("enlarger.queue")}>
+          {state.queueNames.map((name, index) => (
+            <li className="queue-row" key={`${index}-${name}`}>
+              <button
+                className={index === state.queueIndex ? "queue-item is-current" : "queue-item"}
+                type="button"
+                aria-current={index === state.queueIndex ? "true" : undefined}
+                disabled={state.busy}
+                onClick={() => onQueueIndex(index)}
+              >
+                {name}
+              </button>
+              <button
+                className="queue-remove"
+                type="button"
+                aria-label={tr("enlarger.remove")}
+                disabled={state.busy}
+                onClick={() => onQueueRemove(index)}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       <div className="field-row" id="size-panel">
         <div className="field">
@@ -57,7 +142,7 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
               if (!state.hasSource) return;
               const w = clampInt(event.target.value, 1, MAX_SIDE);
               const h = state.lockAspect ? Math.max(1, Math.round(w / aspect)) : state.destH;
-              onDestChange(w, h);
+              onDestChange(w, h, null);
             }}
           />
         </div>
@@ -75,7 +160,7 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
               if (!state.hasSource) return;
               const h = clampInt(event.target.value, 1, MAX_SIDE);
               const w = state.lockAspect ? Math.max(1, Math.round(h * aspect)) : state.destW;
-              onDestChange(w, h);
+              onDestChange(w, h, null);
             }}
           />
         </div>
@@ -95,6 +180,7 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
               onDestChange(
                 Math.max(1, Math.round(state.sourceWidth * p)),
                 Math.max(1, Math.round(state.sourceHeight * p)),
+                null,
               );
             }}
           />
@@ -107,8 +193,11 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
             disabled={!state.hasSource}
             onChange={(event) => {
               dispatch({ type: "setLockAspect", value: event.target.checked });
-              if (event.target.checked && state.hasSource) {
-                onDestChange(state.destW, Math.max(1, Math.round(state.destW / aspect)));
+              if (!state.hasSource) return;
+              if (state.paperW && state.paperH) {
+                applyPaper(state.paperW, state.paperH, state.printUnit, state.dpi, event.target.checked);
+              } else if (event.target.checked) {
+                onDestChange(state.destW, Math.max(1, Math.round(state.destW / aspect)), null);
               }
             }}
           />
@@ -136,6 +225,119 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
           })}
         </div>
       </div>
+
+      <div className="print-dock">
+        <span className="adv-label">{tr("enlarger.print")}</span>
+        <div className="field-row">
+          <div className="field">
+            <label htmlFor="paper-w">{tr("enlarger.paperW")}</label>
+            <input
+              id="paper-w"
+              type="number"
+              min={1}
+              step={state.printUnit === "mm" ? 1 : 0.1}
+              inputMode="decimal"
+              disabled={!state.hasSource}
+              value={state.hasSource ? formatPaper(paperW, state.printUnit) : ""}
+              onChange={(event) => {
+                const w = Number(event.target.value);
+                if (!Number.isFinite(w) || w <= 0) return;
+                applyPaper(w, paperH || w);
+              }}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="paper-h">{tr("enlarger.paperH")}</label>
+            <input
+              id="paper-h"
+              type="number"
+              min={1}
+              step={state.printUnit === "mm" ? 1 : 0.1}
+              inputMode="decimal"
+              disabled={!state.hasSource}
+              value={state.hasSource ? formatPaper(paperH, state.printUnit) : ""}
+              onChange={(event) => {
+                const h = Number(event.target.value);
+                if (!Number.isFinite(h) || h <= 0) return;
+                applyPaper(paperW || h, h);
+              }}
+            />
+          </div>
+          <div className="field">
+            <label htmlFor="print-unit">{tr("enlarger.unit")}</label>
+            <select
+              id="print-unit"
+              value={state.printUnit}
+              onChange={(event) => {
+                const next = event.target.value === "mm" ? "mm" : "in";
+                const from = state.printUnit;
+                dispatch({ type: "setPrintUnit", value: next });
+                if (state.paperW && state.paperH) {
+                  const converted = convertPaper(state.paperW, state.paperH, from, next);
+                  dispatch({ type: "setPaper", width: converted.width, height: converted.height });
+                }
+              }}
+            >
+              <option value="mm">{tr("enlarger.unitMm")}</option>
+              <option value="in">{tr("enlarger.unitIn")}</option>
+            </select>
+          </div>
+        </div>
+        <div className="profiles" role="group" aria-label={tr("enlarger.dpi")}>
+          {DPI_PRESETS.map((dpi) => (
+            <button
+              key={dpi}
+              className="chip"
+              type="button"
+              aria-pressed={state.dpi === dpi}
+              onClick={() => {
+                dispatch({ type: "setDpi", value: dpi });
+                if (state.paperW && state.paperH) applyPaper(state.paperW, state.paperH, state.printUnit, dpi);
+              }}
+            >
+              {dpi}
+            </button>
+          ))}
+        </div>
+        <div className="profiles" role="group" aria-label={tr("enlarger.print")}>
+          {paperPresets(state.printUnit).map((preset) => {
+            const pressed =
+              state.paperW !== null &&
+              Math.abs((state.paperW ?? 0) - preset.w) < 0.05 &&
+              Math.abs((state.paperH ?? 0) - preset.h) < 0.05;
+            return (
+              <button
+                key={preset.label}
+                className="chip"
+                type="button"
+                disabled={!state.hasSource}
+                aria-pressed={pressed}
+                onClick={() => applyPaper(preset.w, preset.h)}
+              >
+                {preset.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {state.meter ? (
+        <div className="meter" aria-label={tr("enlarger.meter")}>
+          <div className="meter-hist">
+            {state.meter.bins.map((count, index) => (
+              <span key={index} style={{ height: `${(count / maxBin) * 100}%` }} />
+            ))}
+          </div>
+          <div className="meter-scan" aria-label={tr("enlarger.scan")}>
+            {state.meter.scan.map((y, index) => (
+              <span key={index} style={{ height: `${(y / 255) * 100}%` }} />
+            ))}
+          </div>
+          {clipPct > CLIP_WARN * 100 ? (
+            <p className="meter-clip">{tr("enlarger.clip", { pct: clipPct.toFixed(1) })}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="advanced">
         <span className="adv-label">{tr("enlarger.post")}</span>
@@ -231,12 +433,57 @@ export function Enlarger({ beforeChange, onDestChange, onOpen, onExport }: Props
             />
           </div>
         </div>
-        <button className="btn-export" type="button" disabled={state.busy || !state.hasSource} onClick={onExport}>
-          {tr("enlarger.export")}
-        </button>
+        <div className={state.queueNames.length > 1 ? "export-actions" : "export-actions is-single"}>
+          <button className="btn-export" type="button" disabled={state.busy || !state.hasSource} onClick={onExport}>
+            {tr("enlarger.export")}
+          </button>
+          {state.queueNames.length > 1 ? (
+            <>
+              <button
+                className="btn-export-all"
+                type="button"
+                disabled={state.busy || !state.hasSource}
+                onClick={onExportAll}
+              >
+                {tr("enlarger.exportAll")}
+              </button>
+              <button
+                className="btn-ghost"
+                type="button"
+                disabled={state.busy || !state.hasSource}
+                onClick={onExportEach}
+              >
+                {tr("enlarger.saveEach")}
+              </button>
+            </>
+          ) : null}
+        </div>
+        <div className="history-row">
+          <button className="btn-ghost" type="button" disabled={state.undoDepth === 0} onClick={onUndo}>
+            {tr("enlarger.undo")}
+          </button>
+          <button className="btn-ghost" type="button" disabled={state.redoDepth === 0} onClick={onRedo}>
+            {tr("enlarger.redo")}
+          </button>
+          <button className="btn-ghost" type="button" onClick={onCopyRecipe}>
+            {tr("enlarger.recipe")}
+          </button>
+        </div>
         <button className="btn-ghost" type="button" onClick={onOpen}>
           {tr("enlarger.open")}
         </button>
+        {state.installReady ? (
+          <button className="btn-ghost" type="button" onClick={onInstall}>
+            {tr("enlarger.install")}
+          </button>
+        ) : null}
+        {state.iosInstall ? <p className="passport-hint">{tr("enlarger.iosInstall")}</p> : null}
+        {state.hasSource ? (
+          <>
+            <p className="passport-hint">{tr(state.hasExif ? "enlarger.passportExif" : "enlarger.passportNone")}</p>
+            <p className="passport-hint">{tr(iccKey)}</p>
+          </>
+        ) : null}
       </div>
     </aside>
   );

@@ -1,5 +1,9 @@
 import type { ColorSpace, ExportFormat, KernelId, Locale, StatusKind, Theme, ViewMode } from "./config";
 import type { StatusMsg } from "./i18n";
+import type { IccKind } from "./io/icc";
+import type { FrameMeter } from "./meter";
+import type { PrintUnit } from "./print";
+import { parseRecipe } from "./recipe";
 import { DEFAULTS, type PersistableSettings } from "./storage";
 
 export type UiState = PersistableSettings & {
@@ -20,6 +24,18 @@ export type UiState = PersistableSettings & {
   overview: boolean;
   dragOver: boolean;
   offline: boolean;
+  recipeScale: number | null;
+  queueNames: string[];
+  queueIndex: number;
+  hasExif: boolean;
+  iccKind: IccKind;
+  meter: FrameMeter | null;
+  paperW: number | null;
+  paperH: number | null;
+  undoDepth: number;
+  redoDepth: number;
+  installReady: boolean;
+  iosInstall: boolean;
 };
 
 export type SettingsSnap = {
@@ -42,6 +58,20 @@ export function settingsFingerprint(state: UiState) {
     state.kernel,
     state.lanczosA,
     state.colorSpace,
+    state.unsharpEnabled,
+    state.unsharpAmount,
+    state.unsharpRadius,
+    state.unsharpThreshold,
+  ].join("|");
+}
+
+export function kernelFingerprint(state: UiState, kernelId: KernelId) {
+  return [
+    state.destW,
+    state.destH,
+    kernelId,
+    state.lanczosA,
+    kernelId === "photonic" ? "linear" : state.colorSpace,
     state.unsharpEnabled,
     state.unsharpAmount,
     state.unsharpRadius,
@@ -84,11 +114,42 @@ export function createInitialState(): UiState {
     overview: false,
     dragOver: false,
     offline: false,
+    recipeScale: null,
+    queueNames: [],
+    queueIndex: 0,
+    hasExif: false,
+    iccKind: "none",
+    meter: null,
+    paperW: null,
+    paperH: null,
+    undoDepth: 0,
+    redoDepth: 0,
+    installReady: false,
+    iosInstall: false,
   };
 }
 
 export function hydrateSettings(saved: PersistableSettings): UiState {
-  return { ...createInitialState(), ...saved };
+  const base = { ...createInitialState(), ...saved };
+  if (typeof window === "undefined") return base;
+  const recipe = parseRecipe(window.location.hash);
+  if (!recipe) return base;
+  return {
+    ...base,
+    kernel: recipe.kernel ?? base.kernel,
+    lanczosA: recipe.lanczosA ?? base.lanczosA,
+    colorSpace: recipe.colorSpace ?? base.colorSpace,
+    unsharpEnabled: recipe.unsharpEnabled ?? base.unsharpEnabled,
+    unsharpAmount: recipe.unsharpAmount ?? base.unsharpAmount,
+    unsharpRadius: recipe.unsharpRadius ?? base.unsharpRadius,
+    unsharpThreshold: recipe.unsharpThreshold ?? base.unsharpThreshold,
+    exportFormat: recipe.exportFormat ?? base.exportFormat,
+    quality: recipe.quality ?? base.quality,
+    lockAspect: recipe.lockAspect ?? base.lockAspect,
+    recipeScale: recipe.scale ?? null,
+    dpi: recipe.dpi ?? base.dpi,
+    printUnit: recipe.printUnit ?? base.printUnit,
+  };
 }
 
 export type Action =
@@ -121,8 +182,24 @@ export type Action =
       name: string;
       mime: string;
       isGif: boolean;
+      destW: number;
+      destH: number;
+      hasExif: boolean;
+      iccKind: IccKind;
     }
-  | { type: "applySnap"; snap: SettingsSnap };
+  | { type: "clearSource" }
+  | { type: "applySnap"; snap: SettingsSnap }
+  | { type: "setRecipeScale"; value: number | null }
+  | { type: "setQueue"; names: string[]; index: number }
+  | { type: "setQueueIndex"; index: number }
+  | { type: "setVersus"; side: "a" | "b"; kernel: KernelId }
+  | { type: "setDpi"; value: number }
+  | { type: "setPrintUnit"; value: PrintUnit }
+  | { type: "setPaper"; width: number | null; height: number | null }
+  | { type: "setMeter"; value: FrameMeter | null }
+  | { type: "setHistory"; undo: number; redo: number }
+  | { type: "setInstallReady"; value: boolean }
+  | { type: "setIosInstall"; value: boolean };
 
 export function reducer(state: UiState, action: Action): UiState {
   switch (action.type) {
@@ -183,10 +260,57 @@ export function reducer(state: UiState, action: Action): UiState {
         sourceName: action.name,
         sourceMime: action.mime,
         sourceIsGif: action.isGif,
-        destW: action.width,
-        destH: action.height,
+        destW: action.destW,
+        destH: action.destH,
         overview: false,
+        hasExif: action.hasExif,
+        iccKind: action.iccKind,
+        recipeScale: null,
+        meter: null,
       };
+    case "clearSource":
+      return {
+        ...state,
+        hasSource: false,
+        sourceWidth: 0,
+        sourceHeight: 0,
+        sourceName: "",
+        sourceMime: "",
+        sourceIsGif: false,
+        destW: 0,
+        destH: 0,
+        overview: false,
+        hasExif: false,
+        iccKind: "none",
+        recipeScale: null,
+        meter: null,
+        queueNames: [],
+        queueIndex: 0,
+        status: { key: "status.queueEmpty" },
+        statusKind: "",
+      };
+    case "setRecipeScale":
+      return { ...state, recipeScale: action.value };
+    case "setQueue":
+      return { ...state, queueNames: action.names, queueIndex: action.index };
+    case "setQueueIndex":
+      return { ...state, queueIndex: action.index };
+    case "setVersus":
+      return action.side === "a" ? { ...state, versusA: action.kernel } : { ...state, versusB: action.kernel };
+    case "setDpi":
+      return { ...state, dpi: action.value };
+    case "setPrintUnit":
+      return { ...state, printUnit: action.value };
+    case "setPaper":
+      return { ...state, paperW: action.width, paperH: action.height };
+    case "setMeter":
+      return { ...state, meter: action.value };
+    case "setHistory":
+      return { ...state, undoDepth: action.undo, redoDepth: action.redo };
+    case "setInstallReady":
+      return { ...state, installReady: action.value };
+    case "setIosInstall":
+      return { ...state, iosInstall: action.value };
     case "applySnap":
       return { ...state, ...action.snap };
     default:

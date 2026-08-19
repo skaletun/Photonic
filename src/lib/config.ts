@@ -7,9 +7,22 @@ export const ACCEPT_TYPES = [
   "image/bmp",
   "image/x-windows-bmp",
   "image/gif",
+  "image/heic",
+  "image/heif",
+  "image/avif",
 ] as const;
 
-export const ACCEPT_EXT = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif"] as const;
+export const ACCEPT_EXT = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".bmp",
+  ".gif",
+  ".heic",
+  ".heif",
+  ".avif",
+] as const;
 
 export const KERNEL_IDS = [
   "photonic",
@@ -24,7 +37,7 @@ export const KERNEL_IDS = [
 export type KernelId = (typeof KERNEL_IDS)[number];
 export type FilterId = KernelId | "mitchell";
 export type ColorSpace = "linear" | "srgb";
-export type ViewMode = "split" | "side" | "grid";
+export type ViewMode = "split" | "side" | "grid" | "versus";
 export type Theme = "dark" | "light";
 export type Locale = "en" | "ru";
 export type ExportFormat = "original" | "png" | "jpeg" | "webp";
@@ -40,5 +53,13 @@ export const MAX_AREA = 268_435_456;
 export const MIN_PERCENT = 10;
 export const MAX_PERCENT = 1000;
 export const DEBOUNCE_MS = 220;
+export const LOUPE_DEBOUNCE_MS = 100;
+
+export function nextKernelId(id: KernelId): KernelId {
+  const i = KERNEL_IDS.indexOf(id);
+  return KERNEL_IDS[(i + 1) % KERNEL_IDS.length];
+}
+
 export const STORAGE_KEY = "photonic:v1";
 export const BAND_ROWS = 24;
+export const MAX_BATCH = 100;

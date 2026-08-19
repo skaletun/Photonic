@@ -265,6 +265,162 @@
   color: var(--signal-bright);
 }
 
+.export-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+
+.export-actions.is-single {
+  grid-template-columns: 1fr;
+}
+
+.btn-export-all {
+  min-height: 2.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--paper) 6%, transparent);
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.76rem;
+  border-radius: 1.35rem 2px 1rem 2px;
+  transition: border-color var(--duration) var(--ease-out), color var(--duration) var(--ease-out);
+}
+
+.btn-export-all:hover:not(:disabled) {
+  border-color: var(--signal);
+  color: var(--signal-bright);
+}
+
+.btn-export-all:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.queue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  max-height: 7.8rem;
+  overflow: auto;
+  margin: 0 0 0.15rem;
+  padding: 0.15rem 0 0.25rem;
+  list-style: none;
+}
+
+.queue li {
+  min-width: 0;
+}
+
+.queue-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.15rem;
+}
+
+.queue-item {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.15rem;
+  padding: 0.28rem 0.55rem 0.28rem 0.65rem;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--text-mute);
+  text-align: left;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queue-item.is-current {
+  border-left-color: var(--signal);
+  color: var(--text);
+  background: color-mix(in srgb, var(--paper) 7%, transparent);
+}
+
+.queue-item:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.queue-remove {
+  flex: 0 0 2.4rem;
+  min-height: 2.15rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.queue-remove:hover:not(:disabled) {
+  color: var(--signal-bright);
+}
+
+.print-dock {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.history-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.history-row .btn-ghost {
+  flex: 1 1 5.5rem;
+}
+
+.meter {
+  display: grid;
+  gap: 0.28rem;
+  margin: 0.2rem 0 0.45rem;
+}
+
+.meter-hist,
+.meter-scan {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 2.1rem;
+  padding: 0.15rem 0.2rem 0;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.meter-scan {
+  height: 1.45rem;
+}
+
+.meter-hist span,
+.meter-scan span {
+  flex: 1 1 0;
+  min-width: 0;
+  background: color-mix(in srgb, var(--brass) 70%, var(--ink));
+}
+
+.meter-scan span {
+  background: color-mix(in srgb, var(--signal) 75%, var(--ink));
+}
+
+.meter-clip {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--signal-bright);
+}
+
+.passport-hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  color: var(--text-mute);
+  text-align: left;
+}
+
 .view-modes {
   display: flex;
   gap: 0.35rem;
@@ -285,7 +441,11 @@
   .theme-toggle,
   .lang-btn,
   .btn-export,
-  .btn-ghost {
+  .btn-export-all,
+  .btn-ghost,
+  .queue-item,
+  .queue-remove,
+  .sample {
     min-height: 44px;
   }
 

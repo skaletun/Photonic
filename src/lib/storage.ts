@@ -1,5 +1,6 @@
 import type { ColorSpace, ExportFormat, KernelId, Locale, Theme, ViewMode } from "./config";
 import { STORAGE_KEY } from "./config";
+import { clampDpi, type PrintUnit } from "./print";
 
 export type PersistableSettings = {
   theme: Theme;
@@ -15,6 +16,10 @@ export type PersistableSettings = {
   exportFormat: ExportFormat;
   quality: number;
   viewMode: ViewMode;
+  dpi: number;
+  printUnit: PrintUnit;
+  versusA: KernelId;
+  versusB: KernelId;
 };
 
 export const DEFAULTS: PersistableSettings = {
@@ -31,9 +36,13 @@ export const DEFAULTS: PersistableSettings = {
   exportFormat: "original",
   quality: 0.92,
   viewMode: "split",
+  dpi: 300,
+  printUnit: "in",
+  versusA: "photonic",
+  versusB: "lanczos",
 };
 
-function isKernelId(value: unknown): value is KernelId {
+export function isKernelId(value: unknown): value is KernelId {
   return (
     value === "photonic" ||
     value === "nearest" ||
@@ -45,6 +54,14 @@ function isKernelId(value: unknown): value is KernelId {
   );
 }
 
+export function isViewMode(value: unknown): value is ViewMode {
+  return value === "split" || value === "side" || value === "grid" || value === "versus";
+}
+
+export function isPrintUnit(value: unknown): value is PrintUnit {
+  return value === "mm" || value === "in";
+}
+
 export function detectBrowserLocale(): Locale {
   if (typeof navigator === "undefined") return "en";
   return /^ru\b/i.test(navigator.language) ? "ru" : "en";
@@ -54,16 +71,34 @@ export function loadSettings(): PersistableSettings {
   const browserLocale = detectBrowserLocale();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULTS, locale: browserLocale };
+    if (!raw) {
+      return { ...DEFAULTS, locale: browserLocale, printUnit: browserLocale === "ru" ? "mm" : "in" };
+    }
     const parsed = JSON.parse(raw) as Partial<PersistableSettings> & { settingsRev?: number };
     const kernel = isKernelId(parsed.kernel) ? parsed.kernel : DEFAULTS.kernel;
     const locale = parsed.locale === "en" || parsed.locale === "ru" ? parsed.locale : browserLocale;
     const rev = typeof parsed.settingsRev === "number" ? parsed.settingsRev : 0;
     const theme =
       rev >= 2 && (parsed.theme === "light" || parsed.theme === "dark") ? parsed.theme : DEFAULTS.theme;
-    return { ...DEFAULTS, ...parsed, kernel, locale, theme };
+    const viewMode = isViewMode(parsed.viewMode) ? parsed.viewMode : DEFAULTS.viewMode;
+    const printUnit = isPrintUnit(parsed.printUnit) ? parsed.printUnit : locale === "ru" ? "mm" : "in";
+    const dpi = typeof parsed.dpi === "number" ? clampDpi(parsed.dpi) : DEFAULTS.dpi;
+    const versusA = isKernelId(parsed.versusA) ? parsed.versusA : DEFAULTS.versusA;
+    const versusB = isKernelId(parsed.versusB) ? parsed.versusB : DEFAULTS.versusB;
+    return {
+      ...DEFAULTS,
+      ...parsed,
+      kernel,
+      locale,
+      theme,
+      viewMode,
+      printUnit,
+      dpi,
+      versusA,
+      versusB,
+    };
   } catch {
-    return { ...DEFAULTS, locale: browserLocale };
+    return { ...DEFAULTS, locale: browserLocale, printUnit: browserLocale === "ru" ? "mm" : "in" };
   }
 }
 
@@ -82,6 +117,10 @@ export function saveSettings(state: PersistableSettings) {
     exportFormat: state.exportFormat,
     quality: state.quality,
     viewMode: state.viewMode,
+    dpi: state.dpi,
+    printUnit: state.printUnit,
+    versusA: state.versusA,
+    versusB: state.versusB,
     settingsRev: 2,
   };
   try {

@@ -14,6 +14,8 @@ body {
 
 html {
   background: var(--ink);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -23,6 +25,7 @@ body {
   color: var(--text);
   background: var(--ink);
   min-height: 100vh;
+  min-height: 100svh;
   min-height: 100dvh;
   overflow-x: clip;
 }
@@ -36,6 +39,14 @@ select {
 
 button {
   cursor: pointer;
+  touch-action: manipulation;
+}
+
+a,
+summary,
+input,
+select {
+  touch-action: manipulation;
 }
 
 img,
@@ -118,7 +129,7 @@ a {
   }
 }
 
-@media (display-mode: standalone) {
+@media (display-mode: standalone), (display-mode: window-controls-overlay) {
   html,
   body {
     overscroll-behavior: none;
@@ -130,10 +141,24 @@ a {
   body,
   .app {
     overscroll-behavior-x: none;
-    touch-action: pan-y pinch-zoom;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: color-mix(in srgb, var(--signal) 22%, transparent);
   }
 
   .empty-copy {
     animation: enter-fade 0.45s var(--ease-out) both;
+  }
+
+  .mast,
+  .rail,
+  .enlarger,
+  .site-notes,
+  .bench {
+    touch-action: pan-y;
   }
 }

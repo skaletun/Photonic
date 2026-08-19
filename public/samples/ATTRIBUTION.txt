@@ -1,0 +1,5 @@
+photo.jpg — "Two Leafless Tree Branches" by Rohitmahali01.
+Source: https://commons.wikimedia.org/wiki/File:Two_Leafless_Tree_Branches.jpg
+License: CC0 1.0 Universal Public Domain Dedication.
+
+type.png and pixel.png — generated for Photonic (scripts/make-samples.mjs) to show ringing on type and nearest-neighbour on pixel art.

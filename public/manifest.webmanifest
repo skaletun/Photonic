@@ -6,10 +6,17 @@
   "scope": "./",
   "id": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "orientation": "any",
   "background_color": "#F3F0EA",
   "theme_color": "#F3F0EA",
   "lang": "en",
+  "categories": ["photo", "utilities"],
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": ["focus-existing", "auto"]
+  },
+  "handle_links": "preferred",
   "icons": [
     {
       "src": "./icons/icon-192.png",
@@ -30,6 +37,37 @@
       "purpose": "maskable"
     }
   ],
+  "share_target": {
+    "action": "./share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "images",
+          "accept": [
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/bmp",
+            "image/gif",
+            "image/heic",
+            "image/heif",
+            "image/avif",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp",
+            ".bmp",
+            ".gif",
+            ".heic",
+            ".heif",
+            ".avif"
+          ]
+        }
+      ]
+    }
+  },
   "file_handlers": [
     {
       "action": "./",
@@ -38,7 +76,10 @@
         "image/png": [".png"],
         "image/webp": [".webp"],
         "image/bmp": [".bmp"],
-        "image/gif": [".gif"]
+        "image/gif": [".gif"],
+        "image/heic": [".heic"],
+        "image/heif": [".heif"],
+        "image/avif": [".avif"]
       }
     }
   ]

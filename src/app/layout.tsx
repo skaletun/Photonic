@@ -20,6 +20,11 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Photonic",
   },
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
   icons: {
     icon: [
       { url: withBase("/icons/icon-192.png"), sizes: "192x192", type: "image/png" },
@@ -33,6 +38,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F3F0EA" },
     { media: "(prefers-color-scheme: dark)", color: "#101214" },

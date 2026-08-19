@@ -1,5 +1,7 @@
 import { ACCEPT_EXT, ACCEPT_TYPES, MAX_AREA, MAX_SIDE } from "../config";
 import { AppError } from "../errors";
+import { readPassport, type ImagePassport } from "./exif";
+import { decodeHeifBuffer } from "./heif";
 
 function mimeFromName(name: string) {
   const lower = name.toLowerCase();
@@ -8,15 +10,48 @@ function mimeFromName(name: string) {
   if (lower.endsWith(".webp")) return "image/webp";
   if (lower.endsWith(".bmp")) return "image/bmp";
   if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".heic")) return "image/heic";
+  if (lower.endsWith(".heif")) return "image/heif";
+  if (lower.endsWith(".avif")) return "image/avif";
   return "";
 }
 
-export function sniffMime(file: File) {
+function ascii(bytes: Uint8Array, start: number, len: number) {
+  return String.fromCharCode(...bytes.subarray(start, start + len));
+}
+
+export function sniffMagic(bytes: Uint8Array) {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return "image/png";
+  }
+  if (bytes.length >= 12 && ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP") return "image/webp";
+  if (bytes.length >= 6 && ascii(bytes, 0, 3) === "GIF") return "image/gif";
+  if (bytes.length >= 2 && bytes[0] === 0x42 && bytes[1] === 0x4d) return "image/bmp";
+  if (bytes.length >= 12 && ascii(bytes, 4, 4) === "ftyp") {
+    const brand = ascii(bytes, 8, 4);
+    if (brand === "avif" || brand === "avis") return "image/avif";
+    if (brand === "heic" || brand === "heix" || brand === "mif1" || brand === "msf1" || brand === "heif") {
+      return "image/heic";
+    }
+  }
+  return "";
+}
+
+export function sniffMime(file: File, bytes?: Uint8Array) {
   const type = (file.type || "").toLowerCase();
   if ((ACCEPT_TYPES as readonly string[]).includes(type)) {
-    return type === "image/x-windows-bmp" ? "image/bmp" : type;
+    if (type === "image/x-windows-bmp") return "image/bmp";
+    if (type === "image/heif") return "image/heic";
+    return type;
   }
-  return mimeFromName(file.name);
+  return mimeFromName(file.name) || (bytes ? sniffMagic(bytes) : "");
 }
 
 export function isSupportedFile(file: File) {
@@ -26,7 +61,11 @@ export function isSupportedFile(file: File) {
 }
 
 export function acceptAttr() {
-  return [...ACCEPT_TYPES, ...ACCEPT_EXT].join(",");
+  return ["image/*", ...ACCEPT_EXT].join(",");
+}
+
+function isHeif(mime: string) {
+  return mime === "image/heic" || mime === "image/heif";
 }
 
 export type DecodedImage = {
@@ -37,19 +76,33 @@ export type DecodedImage = {
   mime: string;
   name: string;
   isGif: boolean;
+  bytes: Uint8Array;
+  passport: ImagePassport;
 };
+
+async function bitmapFromFile(blob: Blob, mime: string, bytes: Uint8Array) {
+  try {
+    return await createImageBitmap(blob, { imageOrientation: "from-image" });
+  } catch {
+    if (!isHeif(mime)) throw new AppError("decode_failed");
+    const imageData = await decodeHeifBuffer(bytes.slice());
+    return createImageBitmap(imageData);
+  }
+}
 
 /** Декодирует файл в ImageData + облегчённый bitmap для слоя «до». */
 export async function decodeFile(file: File): Promise<DecodedImage> {
-  const mime = sniffMime(file);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mime = sniffMime(file, bytes);
   if (!mime) {
     throw new AppError("unsupported_type");
   }
 
   let bitmap: ImageBitmap;
   try {
-    bitmap = await createImageBitmap(file);
-  } catch {
+    bitmap = await bitmapFromFile(new Blob([new Uint8Array(bytes)], { type: mime === "image/heic" ? "image/heic" : mime }), mime, bytes);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
     throw new AppError("decode_failed");
   }
 
@@ -90,13 +143,19 @@ export async function decodeFile(file: File): Promise<DecodedImage> {
       mime,
       name: file.name,
       isGif: mime === "image/gif",
+      bytes,
+      passport: readPassport(bytes, mime),
     };
   } catch (error) {
     bitmap.close();
     canvas.width = 0;
     canvas.height = 0;
     throw new AppError(
-      error instanceof Error && /memory|alloc|size/i.test(error.message) ? "out_of_memory" : "pixels_unreadable",
+      error instanceof AppError
+        ? error.code
+        : error instanceof Error && /memory|alloc|size/i.test(error.message)
+          ? "out_of_memory"
+          : "pixels_unreadable",
     );
   }
 }

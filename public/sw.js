@@ -1,4 +1,5 @@
-const CACHE = "photonic-shell-v1";
+const CACHE = "photonic-shell-v3";
+const INBOX = "photonic-inbox";
 
 const PRECACHE = [
   "./",
@@ -30,14 +31,23 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))),
-    ),
+    caches
+      .keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE && key !== INBOX).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim()),
   );
 });
 
 self.addEventListener("fetch", (event) => {
   const request = event.request;
+  if (request.method === "POST") {
+    const url = new URL(request.url);
+    const share = new URL("./share", self.registration.scope);
+    if (url.pathname === share.pathname || url.pathname === `${share.pathname}/`) {
+      event.respondWith(handleShare(request));
+    }
+    return;
+  }
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
@@ -61,6 +71,37 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(networkFirst(request));
   }
 });
+
+async function handleShare(request) {
+  try {
+    const form = await request.formData();
+    const files = [...form.getAll("images"), ...form.getAll("file")].filter(
+      (item) => item instanceof File && item.size > 0,
+    );
+    const cache = await caches.open(INBOX);
+    const existing = await cache.keys();
+    await Promise.all(existing.map((key) => cache.delete(key)));
+    for (let i = 0; i < files.length; i += 1) {
+      const file = files[i];
+      await cache.put(
+        `./inbox/${String(i).padStart(3, "0")}`,
+        new Response(file, {
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+            "X-Filename": encodeURIComponent(file.name || `shared-${i}`),
+          },
+        }),
+      );
+    }
+    const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of windows) {
+      client.postMessage({ type: "photonic-share", count: files.length });
+    }
+  } catch {
+    // Still land on the app shell.
+  }
+  return Response.redirect(new URL("./", self.registration.scope).href, 303);
+}
 
 async function cacheFirst(request) {
   const cached = await caches.match(request);

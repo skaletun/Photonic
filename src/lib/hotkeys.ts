@@ -4,13 +4,14 @@ import { KERNEL_IDS } from "./config";
 type HotkeyHandlers = {
   onSave: () => void;
   onUndo: () => void;
+  onRedo: () => void;
   onOpen: () => void;
   onKernel: (id: KernelId) => void;
   onZoom: (factor: number) => void;
   onHoldOriginal: (hold: boolean) => void;
 };
 
-export function bindHotkeys({ onSave, onUndo, onOpen, onKernel, onZoom, onHoldOriginal }: HotkeyHandlers) {
+export function bindHotkeys({ onSave, onUndo, onRedo, onOpen, onKernel, onZoom, onHoldOriginal }: HotkeyHandlers) {
   const isField = (el: EventTarget | null) => {
     if (!(el instanceof HTMLElement)) return false;
     const tag = el.tagName;
@@ -27,6 +28,11 @@ export function bindHotkeys({ onSave, onUndo, onOpen, onKernel, onZoom, onHoldOr
     if (meta && event.key.toLowerCase() === "z" && !event.shiftKey) {
       event.preventDefault();
       onUndo();
+      return;
+    }
+    if (meta && (event.key.toLowerCase() === "y" || (event.key.toLowerCase() === "z" && event.shiftKey))) {
+      event.preventDefault();
+      onRedo();
       return;
     }
     if (meta && event.key.toLowerCase() === "o") {
