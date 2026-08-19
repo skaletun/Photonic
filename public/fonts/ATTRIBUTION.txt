@@ -1,0 +1,2 @@
+Instrument Serif and IBM Plex Sans are licensed under the SIL Open Font License, Version 1.1.
+Files were obtained from the Fontsource packages (jsDelivr) for self-hosting — Photonic does not call a font CDN at runtime.
