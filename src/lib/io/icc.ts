@@ -352,13 +352,12 @@ function stripPngColorChunks(png: Uint8Array) {
 
 async function deflateZlib(data: Uint8Array) {
   if (typeof CompressionStream === "undefined") return null;
-  const stream = new CompressionStream("deflate");
-  const writer = stream.writable.getWriter();
   const payload = new Uint8Array(data.byteLength);
   payload.set(data);
-  await writer.write(payload);
-  await writer.close();
-  return new Uint8Array(await new Response(stream.readable).arrayBuffer());
+  // pipeThrough reads while compressing. write()+close() then Response(readable)
+  // deadlocks in Chromium: the writable never drains.
+  const stream = new Blob([payload]).stream().pipeThrough(new CompressionStream("deflate"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
 export async function injectPngIcc(png: Uint8Array, profile: Uint8Array) {

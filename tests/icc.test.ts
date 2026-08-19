@@ -52,7 +52,12 @@ test("PNG iCCP chunk is inserted before IDAT", async () => {
   const png = Uint8Array.from(
     Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"),
   );
-  const withIcc = await injectPngIcc(png, SRGB_ICC);
+  const withIcc = await Promise.race([
+    injectPngIcc(png, SRGB_ICC),
+    new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("injectPngIcc hung")), 3000);
+    }),
+  ]);
   const found = readIcc(withIcc, "image/png");
   assert.equal(found.kind, "srgb");
 });
