@@ -58,6 +58,11 @@ export function kernelHintKey(id: string): MessageKey {
   return isMessageKey(key) ? key : "kernel.photonic.hint";
 }
 
+export function kernelUseKey(id: string): MessageKey {
+  const key = `kernel.${id}.use`;
+  return isMessageKey(key) ? key : "kernel.photonic.use";
+}
+
 export function statusFromError(error: unknown): StatusMsg {
   const appError = toAppError(error);
   return { key: ERROR_KEYS[appError.code], params: appError.params };

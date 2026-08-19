@@ -127,7 +127,9 @@ export function Enlarger({
         </ul>
       ) : null}
 
-      <div className="field-row" id="size-panel">
+      <div className="size-dock">
+        <span className="adv-label">{tr("enlarger.size")}</span>
+        <div className="field-row" id="size-panel">
         <div className="field">
           <label htmlFor="width-px">{tr("enlarger.width")}</label>
           <input
@@ -224,10 +226,12 @@ export function Enlarger({
             );
           })}
         </div>
+        </div>
       </div>
 
       <div className="print-dock">
         <span className="adv-label">{tr("enlarger.print")}</span>
+        <p className="dock-hint">{tr("enlarger.printHint")}</p>
         <div className="field-row">
           <div className="field">
             <label htmlFor="paper-w">{tr("enlarger.paperW")}</label>
@@ -295,7 +299,7 @@ export function Enlarger({
                 if (state.paperW && state.paperH) applyPaper(state.paperW, state.paperH, state.printUnit, dpi);
               }}
             >
-              {dpi}
+              {tr("enlarger.dpiChip", { dpi })}
             </button>
           ))}
         </div>
@@ -352,7 +356,7 @@ export function Enlarger({
                 dispatch({ type: "setUnsharpEnabled", value: event.target.checked });
               }}
             />
-            <span>Unsharp Mask</span>
+            <span>{tr("enlarger.unsharp")}</span>
           </label>
           <div className="field">
             <label htmlFor="color-space">
@@ -400,6 +404,7 @@ export function Enlarger({
       </div>
 
       <div className="export-dock">
+        <span className="adv-label">{tr("enlarger.save")}</span>
         <div className="field-row">
           <div className="field">
             <label htmlFor="export-format">{tr("enlarger.format")}</label>
@@ -465,10 +470,11 @@ export function Enlarger({
           <button className="btn-ghost" type="button" disabled={state.redoDepth === 0} onClick={onRedo}>
             {tr("enlarger.redo")}
           </button>
-          <button className="btn-ghost" type="button" onClick={onCopyRecipe}>
+          <button className="btn-ghost" type="button" title={tr("enlarger.recipeHint")} onClick={onCopyRecipe}>
             {tr("enlarger.recipe")}
           </button>
         </div>
+        <p className="dock-hint">{tr("enlarger.recipeHint")}</p>
         <button className="btn-ghost" type="button" onClick={onOpen}>
           {tr("enlarger.open")}
         </button>

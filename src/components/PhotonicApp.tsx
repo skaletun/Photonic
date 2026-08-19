@@ -148,8 +148,11 @@ export function PhotonicApp() {
   const historyRef = useRef<HistoryEntry[]>([]);
   const redoRef = useRef<HistoryEntry[]>([]);
   const loupePointRef = useRef({ x: 0.5, y: 0.5, side: "b" as "a" | "b" });
+  const previewPixelsRef = useRef<ImageData | null>(null);
+  const versusPixelsRef = useRef<{ a: ImageData; b: ImageData } | null>(null);
   const previewTimer = useRef(0);
   const loupeTimer = useRef(0);
+  const loupeRaf = useRef(0);
 
   const setStatus = useCallback((status: StatusMsg, kind?: UiState["statusKind"]) => {
     dispatch({ type: "setStatus", status, kind });
@@ -295,6 +298,7 @@ export function PhotonicApp() {
         imageData: fullResultRef.current,
         overview: false,
       });
+      previewPixelsRef.current = fullResultRef.current;
       previewRef.current?.showLoupe(null);
       dispatch({ type: "setOverview", value: false });
       applyMeter(fullResultRef.current);
@@ -327,6 +331,7 @@ export function PhotonicApp() {
         fullFingerprintRef.current = "";
       }
       previewRef.current?.drawPreview({ bitmap: display, imageData, overview });
+      previewPixelsRef.current = imageData;
       dispatch({ type: "setOverview", value: overview });
       const meter = applyMeter(imageData);
       const mp = megapixels(s.destW, s.destH).toFixed(2);
@@ -381,6 +386,7 @@ export function PhotonicApp() {
         frames.push(imageData);
       }
       previewRef.current?.drawVersus({ a: frames[0], b: frames[1], overview });
+      versusPixelsRef.current = { a: frames[0], b: frames[1] };
       dispatch({ type: "setOverview", value: overview });
       const meter = applyMeter(frames[1]);
       if (!(s.unsharpEnabled && meter.clipHigh > CLIP_WARN)) {
@@ -397,25 +403,41 @@ export function PhotonicApp() {
     }
   }, [applyMeter, cachePut, checkDest, resampleOptions, setStatus]);
 
-  const runLoupe = useCallback(async () => {
+  const loupeFrame = useCallback(() => {
     const s = stateRef.current;
-    const client = clientRef.current;
-    if (!s.hasSource || !client) return;
     const point = loupePointRef.current;
     const kernelId = s.viewMode === "versus" ? (point.side === "a" ? s.versusA : s.versusB) : s.kernel;
     const fullKey = `full|${kernelFingerprint(s, kernelId)}`;
     const cached = versusCacheRef.current.get(fullKey);
-    const full =
-      cached && cached.width === s.destW
-        ? cached
-        : kernelId === s.kernel && fullResultRef.current && fullResultRef.current.width === s.destW
-          ? fullResultRef.current
-          : null;
-    if (full) {
-      previewRef.current?.showLoupe(cropAround(full, point.x, point.y, LOUPE_SIZE));
-      return;
+    if (cached && cached.width === s.destW) return { image: cached, isFull: true };
+    if (kernelId === s.kernel && fullResultRef.current && fullResultRef.current.width === s.destW) {
+      return { image: fullResultRef.current, isFull: true };
     }
+    if (s.viewMode === "versus") {
+      const frames = versusPixelsRef.current;
+      const image = point.side === "a" ? frames?.a : frames?.b;
+      if (image) return { image, isFull: image.width === s.destW };
+    }
+    const preview = previewPixelsRef.current;
+    if (preview) return { image: preview, isFull: preview.width === s.destW };
+    return null;
+  }, []);
+
+  const paintLoupe = useCallback(() => {
+    const point = loupePointRef.current;
+    const frame = loupeFrame();
+    if (!frame) return false;
+    previewRef.current?.showLoupe(cropAround(frame.image, point.x, point.y, LOUPE_SIZE));
+    return frame.isFull;
+  }, [loupeFrame]);
+
+  const runLoupeRegion = useCallback(async () => {
+    const s = stateRef.current;
+    const client = clientRef.current;
+    if (!s.hasSource || !client) return;
     if (destPixels(s.destW, s.destH) <= PREVIEW_FULL_MAX_PIXELS) return;
+    const point = loupePointRef.current;
+    const kernelId = s.viewMode === "versus" ? (point.side === "a" ? s.versusA : s.versusB) : s.kernel;
     const size = Math.min(LOUPE_SIZE, s.destW, s.destH);
     const x = Math.max(0, Math.min(s.destW - size, Math.round(point.x * s.destW - size / 2)));
     const y = Math.max(0, Math.min(s.destH - size, Math.round(point.y * s.destH - size / 2)));
@@ -427,19 +449,30 @@ export function PhotonicApp() {
           region: { x, y, w: size, h: size },
         }),
       );
+      const latest = loupePointRef.current;
+      if (latest.x !== point.x || latest.y !== point.y || latest.side !== point.side) return;
       previewRef.current?.showLoupe(toImageData(result));
     } catch (error) {
       if (!isAbortError(error)) setStatus(statusFromError(error), "error");
     }
   }, [resampleOptions, setStatus]);
 
-  const scheduleLoupe = useCallback((nx: number, ny: number, side: "a" | "b") => {
-    loupePointRef.current = { x: nx, y: ny, side };
-    window.clearTimeout(loupeTimer.current);
-    loupeTimer.current = window.setTimeout(() => {
-      void runLoupe();
-    }, LOUPE_DEBOUNCE_MS);
-  }, [runLoupe]);
+  const scheduleLoupe = useCallback(
+    (nx: number, ny: number, side: "a" | "b") => {
+      loupePointRef.current = { x: nx, y: ny, side };
+      if (loupeRaf.current) return;
+      loupeRaf.current = requestAnimationFrame(() => {
+        loupeRaf.current = 0;
+        const isFull = paintLoupe();
+        window.clearTimeout(loupeTimer.current);
+        if (isFull) return;
+        loupeTimer.current = window.setTimeout(() => {
+          void runLoupeRegion();
+        }, LOUPE_DEBOUNCE_MS);
+      });
+    },
+    [paintLoupe, runLoupeRegion],
+  );
 
   const runGrid = useCallback(async () => {
     const s = stateRef.current;
@@ -574,10 +607,15 @@ export function PhotonicApp() {
     sourceRefs.current.passport = EMPTY_PASSPORT;
     fullResultRef.current = null;
     fullFingerprintRef.current = "";
+    previewPixelsRef.current = null;
+    versusPixelsRef.current = null;
     versusCacheRef.current.clear();
     historyRef.current = [];
     redoRef.current = [];
     queueRef.current = [];
+    window.cancelAnimationFrame(loupeRaf.current);
+    loupeRaf.current = 0;
+    window.clearTimeout(loupeTimer.current);
     syncHistory();
     previewRef.current?.showLoupe(null);
     dispatch({ type: "clearSource" });

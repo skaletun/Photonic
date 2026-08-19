@@ -24,6 +24,15 @@ const nextConfig: NextConfig = {
       crypto: false,
       module: false,
     };
+    // libheif-js wraps `require` in a Proxy for Node; webpack cannot statically
+    // extract that. The browser bundle never calls it (fs/path are stubbed above).
+    config.ignoreWarnings = [
+      ...(config.ignoreWarnings ?? []),
+      {
+        module: /node_modules[/\\]libheif-js/,
+        message: /Critical dependency: require function is used in a way in which dependencies cannot be statically extracted/,
+      },
+    ];
     return config;
   },
   ...(basePath

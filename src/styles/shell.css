@@ -196,6 +196,15 @@
   text-align: left;
 }
 
+.rail-lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-mute);
+  text-align: left;
+  max-width: 18rem;
+}
+
 .kernel-plot {
   display: block;
   width: 100%;

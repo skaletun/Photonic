@@ -53,6 +53,7 @@ export const MAX_AREA = 268_435_456;
 export const MIN_PERCENT = 10;
 export const MAX_PERCENT = 1000;
 export const DEBOUNCE_MS = 220;
+/** Пауза перед 1:1-регионом на кадрах крупнее превью. Сам кроп лупы идёт сразу. */
 export const LOUPE_DEBOUNCE_MS = 100;
 
 export function nextKernelId(id: KernelId): KernelId {

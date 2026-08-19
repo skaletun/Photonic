@@ -1,7 +1,7 @@
 {
   "name": "Photonic",
   "short_name": "Photonic",
-  "description": "Classical image resampler. Photonic kernel and classic filters. No AI, no upload.",
+  "description": "Resize photos on this device. Photonic method and classic filters. No AI, no upload.",
   "start_url": "./",
   "scope": "./",
   "id": "./",

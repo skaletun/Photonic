@@ -3,6 +3,7 @@ import { test } from "vitest";
 import { en } from "@/lib/i18n/en";
 import { ru } from "@/lib/i18n/ru";
 import { t } from "@/lib/i18n";
+import { SITE_LINKS } from "@/lib/site-links";
 
 test("en and ru expose the same keys", () => {
   assert.deepEqual(Object.keys(en).sort(), Object.keys(ru).sort());
@@ -26,6 +27,26 @@ test("license FAQ is not MIT", () => {
   assert.match(en["support.lead"], /not MIT/);
   assert.match(ru["faq.a8"], /все права защищены/i);
   assert.match(ru["support.lead"], /не MIT/);
+});
+
+test("telegram points at the Photonic channel", () => {
+  assert.equal(SITE_LINKS.telegram, "https://t.me/photonic_scale");
+  assert.equal(en["contacts.telegramHint"], "t.me/photonic_scale");
+  assert.equal(ru["contacts.telegramHint"], "t.me/photonic_scale");
+});
+
+test("how-to FAQ explains open, size, download", () => {
+  assert.match(en["faq.aHow"], /Download/);
+  assert.match(ru["faq.aHow"], /Скачать/);
+  assert.match(en["empty.step3"], /Download/);
+  assert.match(ru["empty.step3"], /Скачайте/);
+});
+
+test("loupe is a preview tool", () => {
+  assert.match(en["preview.loupeHint"], /loupe/i);
+  assert.match(ru["preview.loupeHint"], /Лупа/);
+  assert.match(en["preview.gestureLoupe"], /loupe icon/);
+  assert.match(ru["preview.gestureLoupe"], /лупы/);
 });
 
 test("share-target FAQ does not fake iOS", () => {

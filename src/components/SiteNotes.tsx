@@ -5,6 +5,7 @@ import type { MessageKey } from "@/lib/i18n";
 import { useT } from "@/hooks/useT";
 
 const FAQ: { q: MessageKey; a: MessageKey }[] = [
+  { q: "faq.qHow", a: "faq.aHow" },
   { q: "faq.q1", a: "faq.a1" },
   { q: "faq.q2", a: "faq.a2" },
   { q: "faq.q3", a: "faq.a3" },

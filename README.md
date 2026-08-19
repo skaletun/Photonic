@@ -49,9 +49,9 @@ Light without neural nets. The kernel is in view. The file stays on this device.
 2. Слева выберите ядро. **Photonic** — для фото, графики и текста. Пиксель-арт — nearest и целый 2× / 4×.
 3. Справа задайте размер в пикселях, процентах, профилем ½ / 2× / 4× или листом печати (мм / дюймы, DPI 300 / 360 / 600). При «пропорциях» кадр вписывается в лист.
 4. Сравните слайдером, Versus, рядом или сеткой ядер. Колесо и щипок — зум. Двойной тап — 1↔2.4, тройной тап или chip «по кадру» — сброс вида. На обзоре (больше ~8 Мп) лупа 1:1 следует за пальцем.
-5. Экспорт текущего кадра (Ctrl+S), всех в ZIP или **по одному** (Safari). JPEG / PNG / WebP получают метку sRGB; EXIF копируется без GPS. Ctrl+Z / Ctrl+Y — отмена и повтор настроек.
+5. **Скачать** текущий кадр (Ctrl+S), все в ZIP или **по одному** (Safari). JPEG / PNG / WebP получают метку sRGB; EXIF копируется без GPS. Ctrl+Z / Ctrl+Y — отмена и повтор настроек.
 
-На телефоне: превью сверху, ядра чипами, **Экспорт** липкой кнопкой внизу. Android Chrome после установки: «Поделиться → Photonic». iOS Safari share target не умеет — «На экран Домой» из листа «Поделиться».
+На телефоне: превью сверху, методы чипами, **Скачать** липкой кнопкой внизу. Android Chrome после установки: «Поделиться → Photonic». iOS Safari share target не умеет — «На экран Домой» из листа «Поделиться».
 
 Рецепт (ядро, масштаб, DPI…) копируется ссылкой без картинки.
 
@@ -81,7 +81,7 @@ Light without neural nets. The kernel is in view. The file stays on this device.
 
 - GitHub: [skaletun](https://github.com/skaletun)
 - Почта: [ettsonskal@gmail.com](mailto:ettsonskal@gmail.com)
-- Telegram: [t.me/skaletun](https://t.me/skaletun)
+- Telegram: [t.me/photonic_scale](https://t.me/photonic_scale)
 
 ## Поддержать проект
 

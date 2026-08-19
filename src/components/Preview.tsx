@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { KERNEL_IDS, nextKernelId, type KernelId, type ViewMode } from "@/lib/config";
 import { withBase } from "@/lib/base-path";
 import {
@@ -77,6 +77,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
   ref,
 ) {
   const { t, kernelTitle } = useT();
+  const [loupeOn, setLoupeOn] = useState(false);
 
   const workRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -89,6 +90,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
   const sideAfterRef = useRef<HTMLCanvasElement>(null);
   const loupeRef = useRef<HTMLDivElement>(null);
   const loupeCanvasRef = useRef<HTMLCanvasElement>(null);
+  const loupeSpotRef = useRef<HTMLDivElement>(null);
   const badgeRef = useRef<HTMLSpanElement>(null);
   const zoomReadoutRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -100,7 +102,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
   const splitRef = useRef(0.5);
   const imgWRef = useRef(1);
   const imgHRef = useRef(1);
-  const draggingRef = useRef<"split" | "pan" | "pinch" | null>(null);
+  const draggingRef = useRef<"split" | "pan" | "pinch" | "loupe" | null>(null);
   const pointersRef = useRef(new Map<number, Ptr>());
   const lastPtr = useRef({ x: 0, y: 0 });
   const panStartRef = useRef({ x: 0, y: 0 });
@@ -124,6 +126,8 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
   const holdRef = useRef(holdOriginal);
   const onLoupePointRef = useRef(onLoupePoint);
   const onHoldRef = useRef(onHoldOriginal);
+  const loupeOnRef = useRef(false);
+  const emitLoupeRef = useRef<(clientX: number, clientY: number) => void>(() => {});
 
   kernelRef.current = kernel;
   versusARef.current = versusA;
@@ -132,6 +136,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
   holdRef.current = holdOriginal;
   onLoupePointRef.current = onLoupePoint;
   onHoldRef.current = onHoldOriginal;
+  loupeOnRef.current = loupeOn;
 
   function fitScale() {
     const viewport = viewportRef.current;
@@ -274,15 +279,28 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
     }
   }
 
+  function loupeAllowed() {
+    const mode = viewModeRef.current;
+    return mode === "split" || mode === "versus";
+  }
+
+  function loupeToolOn() {
+    return loupeOnRef.current && loupeAllowed();
+  }
+
   function hideLoupe() {
     const loupe = loupeRef.current;
-    if (!loupe) return;
-    loupe.hidden = true;
-    loupe.classList.remove("is-follow");
+    const spot = loupeSpotRef.current;
+    if (loupe) {
+      loupe.hidden = true;
+      loupe.classList.remove("is-follow");
+    }
+    if (spot) spot.hidden = true;
   }
 
   function placeLoupe(clientX: number, clientY: number) {
     const loupe = loupeRef.current;
+    const spot = loupeSpotRef.current;
     const work = workRef.current;
     if (!loupe || !work) return;
     const rect = work.getBoundingClientRect();
@@ -298,18 +316,40 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
     loupe.style.right = "auto";
     loupe.style.bottom = "auto";
     loupe.classList.add("is-follow");
+    if (spot) {
+      spot.hidden = false;
+      spot.style.left = `${clientX - rect.left}px`;
+      spot.style.top = `${clientY - rect.top}px`;
+    }
   }
 
   function emitLoupe(clientX: number, clientY: number) {
-    const mode = viewModeRef.current;
-    if (mode !== "split" && mode !== "versus") return;
+    if (!loupeAllowed()) return;
     const viewport = viewportRef.current;
     if (!viewport) return;
     placeLoupe(clientX, clientY);
+    const onPoint = onLoupePointRef.current;
+    if (typeof onPoint !== "function") return;
     const pt = pointFromClient(clientX, clientY);
     const rect = viewport.getBoundingClientRect();
     const side = versusSideFromClient(clientX, clientY, rect, splitRef.current, verticalSplit());
-    onLoupePointRef.current(pt.x, pt.y, side);
+    onPoint(pt.x, pt.y, side);
+  }
+  emitLoupeRef.current = emitLoupe;
+
+  function setLoupeTool(on: boolean) {
+    const next = on && loupeAllowed();
+    loupeOnRef.current = next;
+    setLoupeOn(next);
+    viewportRef.current?.classList.toggle("is-loupe", next);
+    if (!next) {
+      hideLoupe();
+      return;
+    }
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const rect = viewport.getBoundingClientRect();
+    emitLoupe(rect.left + rect.width / 2, rect.top + rect.height / 2);
   }
 
   function clearHoldPress() {
@@ -355,7 +395,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
       const loupe = loupeRef.current;
       if (!loupe) return;
       if (!imageData) {
-        hideLoupe();
+        if (!loupeOnRef.current) hideLoupe();
         return;
       }
       loupe.hidden = false;
@@ -388,6 +428,11 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
   useEffect(() => {
     setSplit(splitRef.current);
     applyTransform();
+    if (viewMode !== "split" && viewMode !== "versus" && loupeOnRef.current) {
+      setLoupeTool(false);
+    } else {
+      viewportRef.current?.classList.toggle("is-loupe", loupeToolOn());
+    }
   }, [holdOriginal, kernel, versusA, versusB, viewMode]);
 
   useEffect(() => {
@@ -435,6 +480,15 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
         event.preventDefault();
         window.clearTimeout(doubleTimerRef.current);
         beginPinch();
+        return;
+      }
+
+      if (loupeToolOn()) {
+        event.preventDefault();
+        draggingRef.current = "loupe";
+        panMovedRef.current = false;
+        lastPtr.current = { x: event.clientX, y: event.clientY };
+        emitLoupeRef.current(event.clientX, event.clientY);
         return;
       }
 
@@ -493,6 +547,22 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
         return;
       }
 
+      if (loupeToolOn()) {
+        const rect = viewport.getBoundingClientRect();
+        const over =
+          event.clientX >= rect.left &&
+          event.clientX <= rect.right &&
+          event.clientY >= rect.top &&
+          event.clientY <= rect.bottom;
+        if (over || draggingRef.current === "loupe") {
+          emitLoupeRef.current(event.clientX, event.clientY);
+          if (draggingRef.current === "loupe") event.preventDefault();
+        } else {
+          loupeSpotRef.current && (loupeSpotRef.current.hidden = true);
+        }
+        if (pointersRef.current.size < 2) return;
+      }
+
       if (pointersRef.current.size >= 2) {
         if (draggingRef.current !== "pinch") beginPinch();
         const pts = [...pointersRef.current.values()];
@@ -540,7 +610,6 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
         panXRef.current += dx;
         panYRef.current += dy;
         applyTransform();
-        emitLoupe(event.clientX, event.clientY);
       }
     };
 
@@ -550,7 +619,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
       if (!known) return;
       if (draggingRef.current === "split") {
         draggingRef.current = pointersRef.current.size ? draggingRef.current : null;
-        hideLoupe();
+        if (!loupeToolOn()) hideLoupe();
         return;
       }
 
@@ -562,7 +631,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
       if (pointersRef.current.size === 1) {
         pinchRef.current = null;
         const remaining = [...pointersRef.current.values()][0];
-        draggingRef.current = "pan";
+        draggingRef.current = loupeToolOn() ? "loupe" : "pan";
         lastPtr.current = remaining;
         return;
       }
@@ -570,7 +639,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
       clearHoldPress();
       pinchRef.current = null;
       draggingRef.current = null;
-      hideLoupe();
+      if (!loupeToolOn()) hideLoupe();
     };
 
     const onWheel = (event: WheelEvent) => {
@@ -592,6 +661,15 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
       }
     };
 
+    const onWindowKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !loupeOnRef.current) return;
+      event.preventDefault();
+      loupeOnRef.current = false;
+      setLoupeOn(false);
+      viewport.classList.remove("is-loupe");
+      hideLoupe();
+    };
+
     const onContextMenu = (event: Event) => {
       event.preventDefault();
     };
@@ -606,6 +684,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
     viewport.addEventListener("wheel", onWheel, { passive: false });
     viewport.addEventListener("contextmenu", onContextMenu);
     splitter.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onWindowKey);
     window.addEventListener("resize", onResize);
     window.visualViewport?.addEventListener("resize", onResize);
 
@@ -620,6 +699,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
       viewport.removeEventListener("wheel", onWheel);
       viewport.removeEventListener("contextmenu", onContextMenu);
       splitter.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onWindowKey);
       window.removeEventListener("resize", onResize);
       window.visualViewport?.removeEventListener("resize", onResize);
     };
@@ -632,6 +712,26 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
           <p className="empty-kicker">{t("empty.kicker")}</p>
           <h2>{t("empty.title")}</h2>
           <p>{t("empty.body")}</p>
+          <ol className="empty-steps">
+            <li>
+              <span className="empty-step-idx" aria-hidden="true">
+                01
+              </span>
+              <span>{t("empty.step1")}</span>
+            </li>
+            <li>
+              <span className="empty-step-idx" aria-hidden="true">
+                02
+              </span>
+              <span>{t("empty.step2")}</span>
+            </li>
+            <li>
+              <span className="empty-step-idx" aria-hidden="true">
+                03
+              </span>
+              <span>{t("empty.step3")}</span>
+            </li>
+          </ol>
           <button
             className="btn-export empty-open"
             type="button"
@@ -670,25 +770,41 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
         <div className="view-modes" role="group" aria-label={t("preview.modes")}>
           {(
             [
-              ["split", "preview.split"],
-              ["versus", "preview.versus"],
-              ["side", "preview.side"],
-              ["grid", "preview.grid"],
+              ["split", "preview.split", "preview.splitHint"],
+              ["versus", "preview.versus", "preview.versusHint"],
+              ["side", "preview.side", "preview.sideHint"],
+              ["grid", "preview.grid", "preview.gridHint"],
             ] as const
-          ).map(([mode, key]) => (
+          ).map(([mode, key, hint]) => (
             <button
               key={mode}
               className="chip"
               type="button"
               data-mode={mode}
+              title={t(hint)}
               aria-pressed={viewMode === mode}
               onClick={() => onViewMode(mode)}
             >
               {t(key)}
             </button>
           ))}
-          <button className="chip chip-fit" type="button" onClick={() => resetView()}>
+          <button className="chip chip-fit" type="button" title={t("preview.fitHint")} onClick={() => resetView()}>
             {t("preview.fit")}
+          </button>
+          <button
+            className="chip chip-icon chip-loupe"
+            type="button"
+            title={viewMode === "split" || viewMode === "versus" ? t("preview.loupeHint") : t("preview.loupeNeedView")}
+            aria-label={t("preview.loupe")}
+            aria-pressed={loupeOn}
+            disabled={viewMode === "grid" || viewMode === "side"}
+            onClick={() => setLoupeTool(!loupeOn)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7">
+              <circle cx="10.2" cy="10.2" r="5.6" />
+              <circle cx="10.2" cy="10.2" r="2.15" opacity="0.4" />
+              <path d="M14.7 15.1 20.2 21" strokeLinecap="square" />
+            </svg>
           </button>
         </div>
         <div className="zoom-readout" ref={zoomReadoutRef}>
@@ -702,6 +818,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
           <button
             className="versus-tag"
             type="button"
+            title={t("preview.versusTagHint")}
             onClick={() => onVersusKernel("a", nextKernelId(versusA))}
           >
             A · {kernelTitle(versusA)}
@@ -709,13 +826,14 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
           <button
             className="versus-tag is-b"
             type="button"
+            title={t("preview.versusTagHint")}
             onClick={() => onVersusKernel("b", nextKernelId(versusB))}
           >
             B · {kernelTitle(versusB)}
           </button>
         </div>
 
-        <div className="viewport" id="viewport" ref={viewportRef}>
+        <div className={loupeOn ? "viewport is-loupe" : "viewport"} id="viewport" ref={viewportRef}>
           <div className="world" ref={worldRef}>
             <div className="stack" ref={stackRef}>
               <canvas ref={beforeRef} aria-label={t("preview.source")} />
@@ -758,6 +876,16 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
             </figure>
           ))}
         </div>
+        <p className="work-hint">
+          {t(
+            loupeOn
+              ? "preview.gestureLoupe"
+              : viewMode === "split" || viewMode === "versus"
+                ? "preview.gesture"
+                : "preview.gestureLook",
+          )}
+        </p>
+        <div className="loupe-spot" ref={loupeSpotRef} hidden />
         <div className="loupe" ref={loupeRef} hidden>
           <canvas ref={loupeCanvasRef} width={256} height={256} />
           <span>{t("preview.loupe")}</span>

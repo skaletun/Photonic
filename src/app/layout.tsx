@@ -10,9 +10,9 @@ import "@/styles/preview.css";
 import "@/styles/site-notes.css";
 
 export const metadata: Metadata = {
-  title: "Photonic — classical image resampler",
+  title: "Photonic — change image size in the browser",
   description:
-    "Photonic is a local image resampler. The Photonic kernel and classic filters. No AI, no upload.",
+    "Photonic resizes photos on this device. Default Photonic method and classic filters. No AI, no upload.",
   applicationName: "Photonic",
   manifest: withBase("/manifest.webmanifest"),
   appleWebApp: {

@@ -1,12 +1,17 @@
 /**
- * Пайплайн Photonic: линейный sRGB → OKLab, нормированная сигмоида на L,
- * Kaiser-sinc по светлоте, Mitchell по цветности, NoHalo по локальным соседям.
+ * Пайплайн Photonic: linear sRGB → OKLab, сигмоида на L,
+ * Kaiser luma / Mitchell chroma, маршрутизация LINE/FORM/TEXTURE по полю признаков,
+ * один шаг согласованности L и dest-snap внутри [mn, mx] на полном апскейле.
  */
 
 import { BAND_ROWS } from "../config";
 import { TO_LINEAR, TO_SRGB, linearSrgbToOklab, linearToSrgbByte, oklabToLinearSrgb } from "./colorspace";
+import { applyDestLumaSnap, applyLumaConsistency } from "./photonic-consistency";
+import { analyzePatch, engineWeights, EDGE_ANISO } from "./photonic-field";
 import { buildContribs, reflectIndex } from "./separable";
 import type { ResampleEngineOptions } from "./types";
+
+export { EDGE_ANISO, TEXTURE_STD } from "./photonic-field";
 
 /** Contrast ImageMagick / Robidoux для sigmoidal-contrast. */
 export const SIGMOID_K = 6.5;
@@ -17,6 +22,11 @@ export const HALO_RESIDUAL = 0.04;
 export const HALO_RESIDUAL_DOWN = 0.07;
 /** Чуть шире окно luma при уменьшении — меньше муара. */
 export const DOWNSCALE_AA = 1.07;
+/** Максимальный контраст внутри [min, max] на сильном крае. */
+export const SNAP_GAIN = 0.65;
+/** Sobel-магнитуда сигмоидной L, при которой snap выходит на SNAP_GAIN. */
+export const SNAP_MAG_REF = 1.2;
+export const SNAP_SPAN_EPS = 1e-6;
 
 const LUT_N = 4096;
 const labTmp = new Float32Array(3);
@@ -71,6 +81,43 @@ export function softHaloClamp(value: number, min: number, max: number, residual 
   return value;
 }
 
+/**
+ * Контраст внутри [min, max]: середина края уходит к концам, за диапазон не выходим.
+ * g = 0 — тождество. На плоском span функция не трогает value.
+ */
+export function edgeSnapInRange(value: number, min: number, max: number, g: number) {
+  const span = max - min;
+  if (!(span > SNAP_SPAN_EPS) || !(g > 0)) return value;
+  let t = (value - min) / span;
+  t = 0.5 + (t - 0.5) * (1 + g);
+  if (t < 0) t = 0;
+  else if (t > 1) t = 1;
+  return min + t * span;
+}
+
+export function snapGainFromMag(mag: number) {
+  if (!(mag > 0)) return 0;
+  const t = mag / SNAP_MAG_REF;
+  return SNAP_GAIN * (t > 1 ? 1 : t);
+}
+
+function patchBilinear(patch: Float32Array, fx: number, fy: number) {
+  const x = fx < 0 ? 0 : fx > 2 ? 2 : fx;
+  const y = fy < 0 ? 0 : fy > 2 ? 2 : fy;
+  const x0 = x >= 2 ? 1 : Math.floor(x);
+  const y0 = y >= 2 ? 1 : Math.floor(y);
+  const x1 = x0 + 1;
+  const y1 = y0 + 1;
+  const tx = x - x0;
+  const ty = y - y0;
+  return (
+    patch[y0 * 3 + x0] * (1 - tx) * (1 - ty) +
+    patch[y0 * 3 + x1] * tx * (1 - ty) +
+    patch[y1 * 3 + x0] * (1 - tx) * ty +
+    patch[y1 * 3 + x1] * tx * ty
+  );
+}
+
 function yieldTick() {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, 0);
@@ -123,6 +170,9 @@ function neighborSpan(center: number, scale: number): [number, number] {
 
 export async function resamplePhotonic(options: ResampleEngineOptions) {
   const { src, srcW, srcH, destW, destH, region, onProgress, shouldAbort } = options;
+  if (!region && destW === srcW && destH === srcH) {
+    return new Uint8ClampedArray(src);
+  }
   const rx = region?.x ?? 0;
   const ry = region?.y ?? 0;
   const rw = region?.w ?? destW;
@@ -132,7 +182,12 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
   const scaleY = destH / srcH;
   const downX = scaleX < 1;
   const downY = scaleY < 1;
+  const upscale = !downX && !downY;
   const residual = downX || downY ? HALO_RESIDUAL_DOWN : HALO_RESIDUAL;
+  const lumaPatch = new Float32Array(9);
+  const fullFrame = rx === 0 && ry === 0 && rw === destW && rh === destH;
+  const useIbp = upscale && fullFrame;
+  const srcL = useIbp ? new Float32Array(srcW * srcH) : null;
 
   const lumaX = buildContribs(srcW, destW, "photonic", 3, downX ? DOWNSCALE_AA : 1);
   const lumaY = buildContribs(srcH, destH, "photonic", 3, downY ? DOWNSCALE_AA : 1);
@@ -140,6 +195,12 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
   const chromaY = buildContribs(srcH, destH, "mitchell", 2);
 
   const out = new Uint8ClampedArray(rw * rh * 4);
+  const destL = useIbp ? new Float32Array(rw * rh) : null;
+  const destA = useIbp ? new Float32Array(rw * rh) : null;
+  const destCa = useIbp ? new Float32Array(rw * rh) : null;
+  const destCb = useIbp ? new Float32Array(rw * rh) : null;
+  const destMn = useIbp ? new Float32Array(rw * rh) : null;
+  const destMx = useIbp ? new Float32Array(rw * rh) : null;
   const labRows = new Map<number, Float32Array>();
   const lumaCache = new Map<number, Float32Array>();
   const chromaCache = new Map<number, Float32Array>();
@@ -153,6 +214,9 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
       decodeLab(src, base + sx * 4, row, sx * 4);
     }
     labRows.set(sy, row);
+    if (srcL) {
+      for (let sx = 0; sx < srcW; sx += 1) srcL[sy * srcW + sx] = row[sx * 4];
+    }
     return row;
   };
 
@@ -220,7 +284,7 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
     }
   };
 
-  const localRange = (destX: number, destY: number) => {
+  const cellRange = (destX: number, destY: number) => {
     const cx = (destX + 0.5) / scaleX - 0.5;
     const cy = (destY + 0.5) / scaleY - 0.5;
     const [x0, x1] = neighborSpan(cx, scaleX);
@@ -255,7 +319,71 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
       mnB = 0;
       mxB = 0;
     }
-    return { mnL, mxL, mnA, mxA, mnB, mxB };
+    return { cx, cy, mnL, mxL, mnA, mxA, mnB, mxB };
+  };
+
+  const lumaRange = (cx: number, cy: number, mn2: number, mx2: number) => {
+    if (!upscale) {
+      return { mnLine: mn2, mxLine: mx2, mnForm: mn2, mxForm: mx2, mnTex: mn2, mxTex: mx2, features: null };
+    }
+
+    const ix = Math.round(cx);
+    const iy = Math.round(cy);
+    let n = 0;
+    let mn3 = Infinity;
+    let mx3 = -Infinity;
+    let centerL = 0;
+    let centerOk = false;
+
+    for (let j = 0; j < 3; j += 1) {
+      const row = labRow(reflectIndex(iy + j - 1, srcH));
+      for (let i = 0; i < 3; i += 1) {
+        const o = reflectIndex(ix + i - 1, srcW) * 4;
+        const alpha = row[o + 3];
+        const L = alpha < 1e-8 ? Number.NaN : row[o];
+        lumaPatch[j * 3 + i] = L;
+        if (i === 1 && j === 1 && Number.isFinite(L)) {
+          centerL = L;
+          centerOk = true;
+        }
+        if (!Number.isFinite(L)) continue;
+        n += 1;
+        if (L < mn3) mn3 = L;
+        if (L > mx3) mx3 = L;
+      }
+    }
+
+    const fill = centerOk ? centerL : n > 0 ? (mn3 + mx3) / 2 : 0;
+    for (let k = 0; k < 9; k += 1) {
+      if (!Number.isFinite(lumaPatch[k])) lumaPatch[k] = fill;
+    }
+
+    if (n < 2) {
+      return { mnLine: mn2, mxLine: mx2, mnForm: mn2, mxForm: mx2, mnTex: mn2, mxTex: mx2, features: null };
+    }
+
+    const features = analyzePatch(lumaPatch);
+    let mnLine = mn2;
+    let mxLine = mx2;
+    if (features.mag > 1e-4 && features.aniso >= EDGE_ANISO) {
+      const inv = 1 / features.mag;
+      const nx = features.gx * inv;
+      const ny = features.gy * inv;
+      const fx = cx - (ix - 1);
+      const fy = cy - (iy - 1);
+      const across0 = patchBilinear(lumaPatch, fx - nx, fy - ny);
+      const across1 = patchBilinear(lumaPatch, fx + nx, fy + ny);
+      const mnE = across0 < across1 ? across0 : across1;
+      const mxE = across0 > across1 ? across0 : across1;
+      if (mxE - mnE > SNAP_SPAN_EPS) {
+        mnLine = mnE;
+        mxLine = mxE;
+      }
+    }
+
+    const mnTex = Number.isFinite(mn3) ? mn3 : mn2;
+    const mxTex = Number.isFinite(mx3) ? mx3 : mx2;
+    return { mnLine, mxLine, mnForm: mn2, mxForm: mx2, mnTex, mxTex, features };
   };
 
   for (let band = 0; band < rh; band += BAND_ROWS) {
@@ -278,7 +406,7 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
         if (row < minSrcRow) minSrcRow = row;
       }
     }
-    prune(minSrcRow);
+    prune(minSrcRow - 1);
 
     for (let dy = 0; dy < bandH; dy += 1) {
       const destY = ry + band + dy;
@@ -313,20 +441,84 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
           continue;
         }
         const invA = 1 / A;
-        const { mnL, mxL, mnA, mxA, mnB, mxB } = localRange(rx + dx, destY);
-        const Lsig = softHaloClamp(Lp * invA, mnL, mxL, residual);
-        encodeLab(
-          Lsig,
-          softHaloClamp(ca * invA, mnA, mxA, residual),
-          softHaloClamp(cb * invA, mnB, mxB, residual),
-          A,
-          out,
-          di,
+        const cell = cellRange(rx + dx, destY);
+        const luma = lumaRange(cell.cx, cell.cy, cell.mnL, cell.mxL);
+        const rawL = Lp * invA;
+        const caOut = softHaloClamp(ca * invA, cell.mnA, cell.mxA, residual);
+        const cbOut = softHaloClamp(cb * invA, cell.mnB, cell.mxB, residual);
+        const feat = luma.features;
+        const w = feat ? engineWeights(feat) : { line: 0, form: 1, texture: 0 };
+        const snapG = feat
+          ? snapGainFromMag(feat.mag) * w.line * (1 - feat.noise) * feat.confidence
+          : 0;
+        const line = edgeSnapInRange(
+          softHaloClamp(rawL, luma.mnLine, luma.mxLine, residual),
+          luma.mnLine,
+          luma.mxLine,
+          snapG,
         );
+        const form = softHaloClamp(rawL, luma.mnForm, luma.mxForm, residual);
+        const tex = softHaloClamp(rawL, luma.mnTex, luma.mxTex, residual);
+        let Lsig = w.line * line + w.form * form + w.texture * tex;
+        if (feat) Lsig = feat.confidence * Lsig + (1 - feat.confidence) * form;
+        const mn = w.line * luma.mnLine + w.form * luma.mnForm + w.texture * luma.mnTex;
+        const mx = w.line * luma.mxLine + w.form * luma.mxForm + w.texture * luma.mxTex;
+        Lsig = softHaloClamp(Lsig, mn, mx, residual);
+        if (destL && destA && destCa && destCb && destMn && destMx) {
+          const pi = (band + dy) * rw + dx;
+          destL[pi] = Lsig;
+          destA[pi] = A;
+          destCa[pi] = caOut;
+          destCb[pi] = cbOut;
+          destMn[pi] = mn;
+          destMx[pi] = mx;
+        } else {
+          encodeLab(Lsig, caOut, cbOut, A, out, di);
+        }
       }
     }
-    onProgress?.((band + bandH) / rh);
+    onProgress?.(useIbp ? ((band + bandH) / rh) * 0.8 : (band + bandH) / rh);
     await yieldTick();
+  }
+
+  if (destL && destA && destCa && destCb && destMn && destMx && srcL) {
+    if (shouldAbort?.()) return null;
+    for (let sy = 0; sy < srcH; sy += 1) labRow(sy);
+    applyLumaConsistency({
+      destL,
+      destA,
+      destW: rw,
+      destH: rh,
+      srcL,
+      srcW,
+      srcH,
+      mn: destMn,
+      mx: destMx,
+    });
+    if (rw > srcW || rh > srcH) {
+      applyDestLumaSnap({
+        destL,
+        destA,
+        destW: rw,
+        destH: rh,
+        mn: destMn,
+        mx: destMx,
+      });
+    }
+    onProgress?.(0.85);
+    await yieldTick();
+    for (let band = 0; band < rh; band += BAND_ROWS) {
+      if (shouldAbort?.()) return null;
+      const bandH = Math.min(BAND_ROWS, rh - band);
+      for (let dy = 0; dy < bandH; dy += 1) {
+        for (let dx = 0; dx < rw; dx += 1) {
+          const pi = (band + dy) * rw + dx;
+          encodeLab(destL[pi], destCa[pi], destCb[pi], destA[pi], out, pi * 4);
+        }
+      }
+      onProgress?.(0.85 + (0.15 * (band + bandH)) / rh);
+      await yieldTick();
+    }
   }
 
   return out;

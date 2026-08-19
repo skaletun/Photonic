@@ -44,7 +44,7 @@ type Props = {
 
 export function KernelRail({ onKernel }: Props) {
   const { state, dispatch } = useAppState();
-  const { t, kernelTitle, kernelHint } = useT();
+  const { t, kernelTitle, kernelHint, kernelUse } = useT();
   const plotRef = useRef<SVGSVGElement>(null);
   const currentYs = useRef<Float32Array | null>(null);
   const rafRef = useRef(0);
@@ -87,6 +87,7 @@ export function KernelRail({ onKernel }: Props) {
   return (
     <aside className="rail" aria-label={t("rail.aria")}>
       <p className="rail-kicker">{t("rail.kicker")}</p>
+      <p className="rail-lead">{t("rail.lead")}</p>
       <svg className="kernel-plot" ref={plotRef} viewBox="0 0 240 96" role="img" aria-label={t("rail.plot")} />
       <ul className="kernel-list">
         {KERNEL_IDS.map((id, index) => (
@@ -103,6 +104,7 @@ export function KernelRail({ onKernel }: Props) {
                 {String(index + 1).padStart(2, "0")}
               </span>
               <span className="title">{kernelTitle(id)}</span>
+              <span className="use">{kernelUse(id)}</span>
             </button>
           </li>
         ))}

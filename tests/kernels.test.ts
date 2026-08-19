@@ -21,7 +21,7 @@ import {
   nearestKernel,
   photonicKernel,
 } from "@/lib/resample/kernels";
-import { invSigmoid, lutInvSigmoid, lutSigmoid, resamplePhotonic, sigmoid } from "@/lib/resample/photonic";
+import { invSigmoid, lutInvSigmoid, lutSigmoid, edgeSnapInRange, resamplePhotonic, sigmoid } from "@/lib/resample/photonic";
 import { buildContribs, reflectIndex, resampleSeparable } from "@/lib/resample/separable";
 
 test("interpolating kernels equal 1 at origin", () => {
@@ -299,8 +299,8 @@ test("Photonic edge is sharper than bilinear", async () => {
   assert.ok(bilinear && photonic);
   const bW = riseWidth(bilinear, 32, 32, lo, hi);
   const pW = riseWidth(photonic, 32, 32, lo, hi);
-  assert.ok(pW > 0 && bW > 0, `rise widths bilinear=${bW} photonic=${pW}`);
-  assert.ok(pW <= bW, `Photonic rise ${pW} should be <= bilinear ${bW}`);
+  assert.ok(bW > 0, `bilinear rise ${bW}`);
+  assert.ok(pW >= 0 && pW <= bW, `Photonic rise ${pW} should be <= bilinear ${bW}`);
 });
 
 test("Photonic has less cyan halo than RGB Lanczos on a red-white edge", async () => {
@@ -346,4 +346,112 @@ test("Photonic keeps a flat field", async () => {
     assert.ok(Math.abs(out[i + 2] - 200) <= 2, `B ${out[i + 2]}`);
     assert.equal(out[i + 3], 255);
   }
+});
+
+test("edgeSnapInRange stays inside [min, max] and is identity at g=0", () => {
+  assert.equal(edgeSnapInRange(0.42, 0, 1, 0), 0.42);
+  assert.equal(edgeSnapInRange(0.3, 0.3, 0.3, 1), 0.3);
+  const high = edgeSnapInRange(0.7, 0, 1, 0.5);
+  const low = edgeSnapInRange(0.3, 0, 1, 0.5);
+  assert.ok(high > 0.7 && high <= 1, `high ${high}`);
+  assert.ok(low < 0.3 && low >= 0, `low ${low}`);
+  assert.ok(edgeSnapInRange(1.4, 0.1, 0.9, 1) <= 0.9);
+  assert.ok(edgeSnapInRange(-0.4, 0.1, 0.9, 1) >= 0.1);
+});
+
+function grayNoise(width: number, height: number) {
+  const src = new Uint8ClampedArray(width * height * 4);
+  let s = 123456789;
+  for (let i = 0; i < src.length; i += 4) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const v = s & 255;
+    src[i] = v;
+    src[i + 1] = v;
+    src[i + 2] = v;
+    src[i + 3] = 255;
+  }
+  return src;
+}
+
+function lumaStd(out: Uint8ClampedArray) {
+  const n = out.length / 4;
+  let sum = 0;
+  for (let i = 0; i < out.length; i += 4) sum += out[i];
+  const mean = sum / n;
+  let varSum = 0;
+  for (let i = 0; i < out.length; i += 4) {
+    const d = out[i] - mean;
+    varSum += d * d;
+  }
+  return Math.sqrt(varSum / n);
+}
+
+test("Photonic 2x noise keeps texture vs bilinear", async () => {
+  const src = grayNoise(8, 8);
+  const common = { src, srcW: 8, srcH: 8, destW: 16, destH: 16 };
+  const bilinear = await resampleSeparable({
+    ...common,
+    kernelId: "bilinear",
+    colorSpace: "linear",
+  });
+  const photonic = await resamplePhotonic({
+    src: grayNoise(8, 8),
+    srcW: 8,
+    srcH: 8,
+    destW: 16,
+    destH: 16,
+  });
+  assert.ok(bilinear && photonic);
+  const bStd = lumaStd(bilinear);
+  const pStd = lumaStd(photonic);
+  assert.ok(pStd >= bStd * 0.7, `Photonic std ${pStd} should stay near bilinear ${bStd}`);
+});
+
+function grayDiagonalStep(width: number, height: number, lo: number, hi: number) {
+  const src = new Uint8ClampedArray(width * height * 4);
+  const cut = (width + height) / 2;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const v = x + y < cut ? lo : hi;
+      const i = (y * width + x) * 4;
+      src[i] = v;
+      src[i + 1] = v;
+      src[i + 2] = v;
+      src[i + 3] = 255;
+    }
+  }
+  return src;
+}
+
+test("Photonic diagonal edge is sharper than bilinear", async () => {
+  const lo = 32;
+  const hi = 224;
+  const src = grayDiagonalStep(16, 16, lo, hi);
+  const common = { src, srcW: 16, srcH: 16, destW: 32, destH: 32 };
+  const bilinear = await resampleSeparable({
+    ...common,
+    kernelId: "bilinear",
+    colorSpace: "linear",
+  });
+  const photonic = await resamplePhotonic({
+    src: grayDiagonalStep(16, 16, lo, hi),
+    srcW: 16,
+    srcH: 16,
+    destW: 32,
+    destH: 32,
+  });
+  assert.ok(bilinear && photonic);
+  const bW = riseWidth(bilinear, 32, 32, lo, hi);
+  const pW = riseWidth(photonic, 32, 32, lo, hi);
+  assert.ok(pW > 0 && bW > 0, `diagonal rise bilinear=${bW} photonic=${pW}`);
+  assert.ok(pW <= bW, `Photonic diagonal rise ${pW} should be <= bilinear ${bW}`);
+});
+
+test("Photonic 1x copies the source", async () => {
+  const src = new Uint8ClampedArray(4 * 4 * 4);
+  for (let i = 0; i < src.length; i += 1) src[i] = (i * 17) & 255;
+  for (let i = 3; i < src.length; i += 4) src[i] = 255;
+  const out = await resamplePhotonic({ src, srcW: 4, srcH: 4, destW: 4, destH: 4 });
+  assert.ok(out);
+  assert.deepEqual([...out], [...src]);
 });

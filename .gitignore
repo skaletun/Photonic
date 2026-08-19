@@ -55,3 +55,8 @@ next-env.d.ts
 .cursor/
 .claude/
 *.local
+
+# AI
+AGENTS.md
+CLAUDE.md
+Photonic_Technical_Concept.docx
