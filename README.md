@@ -6,26 +6,64 @@ Photonic — увеличитель и ресемплер растра в бра
 
 [Открыть Photonic](https://skaletun.github.io/Photonic/) · [GitHub](https://github.com/skaletun/Photonic)
 
-Light without neural nets. The kernel is in view. The file stays on this device. Photonic is a browser enlarger: drop a JPEG, PNG, WebP, BMP or GIF, pick a kernel, export. No upload. The default **Photonic** kernel works in OKLab — sharp lightness, quieter colour, fewer halos than textbook Lanczos.
+Light without neural nets. The kernel is in view. The file stays on this device. Drop a JPEG, PNG, WebP, AVIF, HEIC, BMP or GIF, pick a kernel, export. No upload. The default **Photonic** kernel works in OKLab — sharp lightness, quieter colour, fewer halos than textbook Lanczos.
+
+![Стол Photonic: ядро слева, кадр со слайдером «до / после», инспектор справа](docs/readme/bench.png)
 
 ## Зачем это, а не апскейл из соцсети
 
-Нейросеть дорисовывает то, чего не было. Photonic меняет сетку пикселей честно: вы видите форму ядра, сравниваете «до / после» и сетку всех фильтров, удерживаете пробел, чтобы снова увидеть исходник.
+Нейросеть дорисовывает то, чего не было. Photonic меняет сетку пикселей честно: вы видите форму ядра, сравниваете «до / после» или два ядра на одном кадре, удерживаете пробел (или долгий тап), чтобы снова увидеть исходник.
 
-- Снимок не уходит с устройства.
+- Снимок не уходит с устройства. Декод, ресемплинг и экспорт идут во вкладке.
 - Эталон Photonic: линейный свет, OKLab, сигмоида против ореолов, Kaiser-sinc по светлоте, Mitchell по цветности, NoHalo.
 - Рядом — классика: nearest, bilinear, bicubic, Lanczos, sinc (Hann), B-spline.
 - RU / EN, светлая тема по умолчанию, ставится как PWA. Офлайн кэшируется оболочка, не ваши фотографии.
 
+![Пустой стол: мозаика образцов и кнопка «открыть файлы»](docs/readme/stage.png)
+
+## Photonic против Lanczos
+
+Один и тот же исходник, масштаб 4×, оба прохода — настоящие ядра из репозитория, не рендер «на глаз». Слева Photonic, справа Lanczos: меньше звона на тексте и ступеньке, меньше цианового ореола на красно-белой кромке.
+
+![Сравнение 4×: Photonic слева, Lanczos справа — текст, ступенька яркости, красно-белая кромка](docs/readme/photonic-vs-lanczos.png)
+
+На столе это режим **Versus**: два полноценных ресемпла на одном сплиттере. Подписи A|B циклят ядро стороны; в рейле по-прежнему ядро экспорта.
+
+![Versus: Photonic слева, Lanczos справа на одном кадре](docs/readme/versus.png)
+
+## Образцы в приложении
+
+Три файла лежат в [`public/samples/`](public/samples/) и открываются с пустого стола. Фото — [CC0](https://commons.wikimedia.org/wiki/File:Two_Leafless_Tree_Branches.jpg); текст и пиксель сгенерированы для звона и nearest. Подписи к кадрам README — в [`docs/readme/ATTRIBUTION.txt`](docs/readme/ATTRIBUTION.txt).
+
+| Фото · Photonic | Текст · звон | Пиксель · 4× nearest |
+| --- | --- | --- |
+| <img src="public/samples/photo.jpg" width="280" alt="Ветки на фоне неба"> | <img src="public/samples/type.png" width="280" alt="Надпись PHOTONIC для проверки звона"> | <img src="docs/readme/pixel-nn.png" width="160" alt="Пиксельный домик, увеличенный nearest 8×"> |
+
+Клетка для nearest: [`public/assets/checker.png`](public/assets/checker.png) и профиль **4×**. Photonic на клетке чуть мягче — так задумано.
+
+<img src="docs/readme/checker-nn.png" width="160" alt="Шахматная клетка 32×32, nearest 8×">
+
 ## Как пользоваться
 
-1. Перетащите файл, вставьте его или нажмите Ctrl+O.
+1. Перетащите файл, вставьте его, откройте с диска (Ctrl+O) или возьмите образец. Несколько файлов — очередь справа.
 2. Слева выберите ядро. **Photonic** — для фото, графики и текста. Пиксель-арт — nearest и целый 2× / 4×.
-3. Справа задайте размер в пикселях, процентах или профилем ½ / 2× / 4×.
-4. Сравните слайдером, рядом или сеткой ядер. Колесо — зум.
-5. Экспорт: PNG, JPEG, WebP или как у исходника. Ctrl+S сохраняет файл.
+3. Справа задайте размер в пикселях, процентах, профилем ½ / 2× / 4× или листом печати (мм / дюймы, DPI 300 / 360 / 600). При «пропорциях» кадр вписывается в лист.
+4. Сравните слайдером, Versus, рядом или сеткой ядер. Колесо и щипок — зум. Двойной тап — 1↔2.4, тройной тап или chip «по кадру» — сброс вида. На обзоре (больше ~8 Мп) лупа 1:1 следует за пальцем.
+5. Экспорт текущего кадра (Ctrl+S), всех в ZIP или **по одному** (Safari). JPEG / PNG / WebP получают метку sRGB; EXIF копируется без GPS. Ctrl+Z / Ctrl+Y — отмена и повтор настроек.
 
-На телефоне: превью сверху, ядра чипами, **Экспорт** липкой кнопкой внизу.
+На телефоне: превью сверху, ядра чипами, **Экспорт** липкой кнопкой внизу. Android Chrome после установки: «Поделиться → Photonic». iOS Safari share target не умеет — «На экран Домой» из листа «Поделиться».
+
+Рецепт (ядро, масштаб, DPI…) копируется ссылкой без картинки.
+
+## Горячие клавиши
+
+- **Ctrl/Cmd+O** — открыть
+- **Ctrl/Cmd+S** — экспорт
+- **Ctrl/Cmd+Z** — отмена настроек
+- **Ctrl/Cmd+Y** или **Shift+Z** — повтор
+- **1–7** — ядра по порядку
+- **+ / −** — зум
+- **Пробел** — исходник, пока удерживаете
 
 ## FAQ
 
@@ -33,7 +71,8 @@ Light without neural nets. The kernel is in view. The file stays on this device.
 
 - **Это ИИ?** Нет. Именованные ядра и цветовой пайплайн, не обученная модель.
 - **Куда уходит файл?** Никуда. Счёт идёт во вкладке.
-- **GIF?** Первый кадр. GIF и BMP при экспорте становятся PNG.
+- **GIF / HEIC / AVIF?** GIF — первый кадр. GIF и BMP уходят в PNG; HEIC и AVIF — в JPEG. HEIC читается нативно или через wasm, AVIF — только если браузер умеет.
+- **Насколько большой экспорт?** Полное превью примерно до 8 Мп. Крупнее — обзор и лупа 1:1, полный размер считается при экспорте. Предупреждение около 80 Мп, отказ выше 120 Мп или если сторона больше 16 384 px.
 - **Почему не открывается с диска?** Worker не стартует с `file://`. Нужен HTTPS или localhost.
 
 ## Контакты
@@ -72,6 +111,14 @@ npm start
 
 `npm start` раздаёт `out/` (`next start` при `output: "export"` нет). GitHub Pages: Settings → Pages → Source: GitHub Actions. Workflow на `main` ставит `GITHUB_PAGES=true`, префикс `/<repo>/`, в `out` пишется `.nojekyll`. В git не кладите `node_modules/`, `.next/`, `out/`.
 
-Проверка nearest: [`public/assets/checker.png`](public/assets/checker.png) и профиль **4×**. Photonic на клетке чуть мягче — так задумано.
+Сравнение для README и nearest-превью клетки/пикселя:
+
+```bash
+npx vite-node scripts/make-readme-images.ts
+```
 
 Браузеры: актуальные Chrome, Firefox, Safari, Edge. Шрифты в `public/fonts/` (SIL OFL), без запроса к Google Fonts.
+
+## Лицензия
+
+Официальным сайтом можно пользоваться бесплатно. Код, дизайн и пайплайн Photonic — все права защищены; копировать и распространять без разрешения нельзя. Шрифты остаются под SIL OFL. Это не MIT.

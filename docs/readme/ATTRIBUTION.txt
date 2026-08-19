@@ -1,0 +1,9 @@
+photo.jpg — "Two Leafless Tree Branches" by Rohitmahali01.
+Source: https://commons.wikimedia.org/wiki/File:Two_Leafless_Tree_Branches.jpg
+License: CC0 1.0 Universal Public Domain Dedication.
+
+type.png, pixel.png — generated for Photonic (scripts/make-samples.mjs).
+pixel-nn.png, checker-nn.png — nearest 8× of those plates for README (scripts/make-readme-images.ts).
+photonic-vs-lanczos.png — 4× of the real Photonic and Lanczos engines (scripts/make-readme-images.ts).
+stage.png, bench.png, versus.png — screenshots of https://skaletun.github.io/Photonic/
+checker.png — generated nearest-neighbour test plate (scripts/make-readme-images.ts).
