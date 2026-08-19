@@ -7,8 +7,8 @@ import { deflateSync } from "node:zlib";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { resamplePhotonic } from "../src/lib/resample/photonic.ts";
-import { resampleSeparable } from "../src/lib/resample/separable.ts";
+import { resamplePhotonic } from "../src/lib/resample/photonic";
+import { resampleSeparable } from "../src/lib/resample/separable";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const docsDir = join(root, "docs", "readme");
