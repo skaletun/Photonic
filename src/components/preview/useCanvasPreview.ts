@@ -84,7 +84,10 @@ export function useCanvasPreview(props: PreviewProps, ref: ForwardedRef<PreviewH
     if (!viewport) return 1;
     const rect = viewport.getBoundingClientRect();
     const pad = 48;
-    return Math.min((rect.width - pad) / imgWRef.current, (rect.height - pad) / imgHRef.current, 8);
+    return Math.max(
+      0.01,
+      Math.min(Math.max(1, rect.width - pad) / imgWRef.current, Math.max(1, rect.height - pad) / imgHRef.current, 8),
+    );
   }
 
   function pointFromClient(clientX: number, clientY: number) {

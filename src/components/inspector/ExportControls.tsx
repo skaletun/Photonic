@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { previewIdentity } from "@/lib/app-state";
 import type { ExportFormat } from "@/lib/config";
 import { encodeImageData, formatToMime } from "@/lib/io/encode";
 import { cropAround } from "@/lib/meter";
@@ -93,7 +94,7 @@ export function ExportControls({ runtime }: { runtime: Runtime }) {
       <button
         type="button"
         className="btn-ghost preview-encode"
-        disabled={!state.hasSource || state.busy || encoding}
+        disabled={!state.hasSource || state.busy || encoding || state.previewFingerprint !== previewIdentity(state)}
         onClick={() => void preview()}
       >
         {t("studio.encodingPreview")}

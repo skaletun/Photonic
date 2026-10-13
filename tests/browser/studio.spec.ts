@@ -28,6 +28,20 @@ test.beforeEach(async ({ page }, testInfo) => {
 test("layout, sample loading, both themes and accessible export", async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  await page.evaluate(() => document.fonts.ready);
+  await expect
+    .poll(() =>
+      page
+        .locator(".sample img")
+        .evaluateAll((images) =>
+          images.every(
+            (image) =>
+              !(image as HTMLImageElement).offsetWidth ||
+              ((image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0),
+          ),
+        ),
+    )
+    .toBe(true);
   await page.screenshot({ path: testInfo.outputPath("empty.png"), animations: "disabled" });
   // Empty samples may be hidden on a compact viewport; file import stays available.
   const sample = page.getByRole("button", { name: "Фото · обычный снимок", exact: true });
@@ -96,7 +110,7 @@ test("saved size preset, history and reload", async ({ page }) => {
   await tab(page, "Размер");
   await page.getByLabel("Ширина, px", { exact: true }).fill("64");
   await ready(page);
-  await page.getByText("Сохранённые пресеты", { exact: true }).click();
+  await page.getByText(/^Сохранённые пресеты/).click();
   await page.getByLabel("Название пресета", { exact: true }).fill("Двойной размер");
   await page.getByRole("button", { name: "Сохранить пресет", exact: true }).click();
   await page.getByLabel("Ширина, px", { exact: true }).fill("96");
@@ -108,7 +122,7 @@ test("saved size preset, history and reload", async ({ page }) => {
   await page.reload();
   await upload(page);
   await tab(page, "Размер");
-  await page.getByText("Сохранённые пресеты", { exact: true }).click();
+  await page.getByText(/^Сохранённые пресеты/).click();
   await expect(page.getByRole("button", { name: /Двойной размер/ })).toBeVisible();
 });
 

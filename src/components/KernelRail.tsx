@@ -44,7 +44,10 @@ export function KernelRail({
           step={0.5}
           value={state.lanczosA}
           onPointerDown={beforeChange}
-          onKeyDown={beforeChange}
+          onKeyDown={(event) => {
+            if (event.key.startsWith("Arrow") || ["Home", "End", "PageUp", "PageDown"].includes(event.key))
+              beforeChange();
+          }}
           onChange={(event) => dispatch({ type: "setLanczosA", value: Number(event.target.value) })}
         />
       </div>

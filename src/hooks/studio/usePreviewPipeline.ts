@@ -93,6 +93,7 @@ export function usePreviewPipeline(runtime: Runtime, state: UiState) {
           const image = await render(KERNEL_IDS[i], i, KERNEL_IDS.length, region);
           if (!current()) return;
           previewRef.current?.paintGrid(KERNEL_IDS[i], image);
+          if (KERNEL_IDS[i] === s.kernel) previewImageRef.current = image;
         }
         runtime.status({ key: "status.gridDone" });
       } else if (s.viewMode === "versus") {

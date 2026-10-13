@@ -73,7 +73,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
                   alt=""
                   width={sample.id === "photo" ? 640 : sample.id === "type" ? 1280 : 32}
                   height={sample.id === "photo" ? 853 : sample.id === "type" ? 720 : 32}
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                   draggable={false}
                 />

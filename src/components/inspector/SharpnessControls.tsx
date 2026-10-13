@@ -48,7 +48,10 @@ export function SharpnessControls({ beforeChange }: { beforeChange: () => void }
             max={200}
             value={state.unsharpAmount}
             onPointerDown={beforeChange}
-            onKeyDown={beforeChange}
+            onKeyDown={(event) => {
+              if (event.key.startsWith("Arrow") || ["Home", "End", "PageUp", "PageDown"].includes(event.key))
+                beforeChange();
+            }}
             onChange={(event) => dispatch({ type: "setUnsharpAmount", value: Number(event.target.value) })}
           />
         </div>
@@ -63,7 +66,10 @@ export function SharpnessControls({ beforeChange }: { beforeChange: () => void }
             step={0.1}
             value={state.unsharpRadius}
             onPointerDown={beforeChange}
-            onKeyDown={beforeChange}
+            onKeyDown={(event) => {
+              if (event.key.startsWith("Arrow") || ["Home", "End", "PageUp", "PageDown"].includes(event.key))
+                beforeChange();
+            }}
             onChange={(event) => dispatch({ type: "setUnsharpRadius", value: Number(event.target.value) })}
           />
         </div>
