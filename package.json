@@ -1,6 +1,6 @@
 {
   "name": "photonic",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,9 +9,11 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack && node scripts/pages-postbuild.mjs",
-    "start": "npx --yes serve out",
+    "start": "node scripts/serve.mjs",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "heic-decode": "^2.1.0",
@@ -20,6 +22,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

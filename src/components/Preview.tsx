@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { KERNEL_IDS, nextKernelId, type KernelId, type ViewMode } from "@/lib/config";
 import { withBase } from "@/lib/base-path";
@@ -425,17 +426,17 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
     },
   }));
 
+  const liveActions = useRef({ applyTransform, loupeToolOn, setLoupeTool, setSplit, resetView, zoomTo });
+  useEffect(() => { liveActions.current = { applyTransform, loupeToolOn, setLoupeTool, setSplit, resetView, zoomTo }; });
   useEffect(() => {
-    setSplit(splitRef.current);
-    applyTransform();
-    if (viewMode !== "split" && viewMode !== "versus" && loupeOnRef.current) {
-      setLoupeTool(false);
-    } else {
-      viewportRef.current?.classList.toggle("is-loupe", loupeToolOn());
-    }
+    const actions = liveActions.current;
+    actions.setSplit(splitRef.current); actions.applyTransform();
+    if (viewMode !== "split" && viewMode !== "versus" && loupeOnRef.current) actions.setLoupeTool(false);
+    else viewportRef.current?.classList.toggle("is-loupe", actions.loupeToolOn());
   }, [holdOriginal, kernel, versusA, versusB, viewMode]);
 
   useEffect(() => {
+    const { applyTransform, loupeToolOn, resetView, setSplit, zoomTo } = liveActions.current;
     const viewport = viewportRef.current;
     const splitter = splitterRef.current;
     if (!viewport || !splitter) return;
@@ -558,7 +559,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
           emitLoupeRef.current(event.clientX, event.clientY);
           if (draggingRef.current === "loupe") event.preventDefault();
         } else {
-          loupeSpotRef.current && (loupeSpotRef.current.hidden = true);
+          if (loupeSpotRef.current) loupeSpotRef.current.hidden = true;
         }
         if (pointersRef.current.size < 2) return;
       }
@@ -710,28 +711,8 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
       <div className="stage-empty" hidden={hasSource} id="stage-empty">
         <div className="empty-copy">
           <p className="empty-kicker">{t("empty.kicker")}</p>
-          <h2>{t("empty.title")}</h2>
-          <p>{t("empty.body")}</p>
-          <ol className="empty-steps">
-            <li>
-              <span className="empty-step-idx" aria-hidden="true">
-                01
-              </span>
-              <span>{t("empty.step1")}</span>
-            </li>
-            <li>
-              <span className="empty-step-idx" aria-hidden="true">
-                02
-              </span>
-              <span>{t("empty.step2")}</span>
-            </li>
-            <li>
-              <span className="empty-step-idx" aria-hidden="true">
-                03
-              </span>
-              <span>{t("empty.step3")}</span>
-            </li>
-          </ol>
+          <h2>{t("studio.emptyTitle")}</h2>
+          <p>{t("studio.emptyHint")}</p>
           <button
             className="btn-export empty-open"
             type="button"
@@ -750,9 +731,9 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
               sample.id === "photo" ? "empty.samplePhoto" : sample.id === "type" ? "empty.sampleType" : "empty.samplePixel";
             return (
               <button key={sample.id} className={`sample sample-${sample.id}`} type="button" onClick={() => onSample(sample.id)}>
-                <img
+                <Image unoptimized
                   src={withBase(`/samples/${sample.file}`)}
-                  alt={t(labelKey)}
+                  alt=""
                   width={sample.id === "photo" ? 640 : sample.id === "type" ? 1280 : 32}
                   height={sample.id === "photo" ? 853 : sample.id === "type" ? 720 : 32}
                   loading="lazy"
@@ -788,6 +769,7 @@ export const Preview = forwardRef<PreviewHandle, Props>(function Preview(
               {t(key)}
             </button>
           ))}
+          <button className="chip" type="button" title={t("studio.actual")} onClick={() => { zoomRef.current = clampZoom(1 / fitScale()); panXRef.current = 0; panYRef.current = 0; applyTransform(); }}>1:1</button>
           <button className="chip chip-fit" type="button" title={t("preview.fitHint")} onClick={() => resetView()}>
             {t("preview.fit")}
           </button>

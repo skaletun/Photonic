@@ -19,6 +19,7 @@ export type UiState = PersistableSettings & {
   sourceWidth: number;
   sourceHeight: number;
   sourceName: string;
+  sourceRevision: number;
   sourceMime: string;
   sourceIsGif: boolean;
   overview: boolean;
@@ -36,6 +37,8 @@ export type UiState = PersistableSettings & {
   redoDepth: number;
   installReady: boolean;
   iosInstall: boolean;
+  exporting: boolean;
+  updateReady: boolean;
 };
 
 export type SettingsSnap = {
@@ -49,6 +52,8 @@ export type SettingsSnap = {
   unsharpAmount: number;
   unsharpRadius: number;
   unsharpThreshold: number;
+  dpi: number; printUnit: PrintUnit; paperW: number | null; paperH: number | null;
+  exportFormat: ExportFormat; quality: number; jpegBackground: string; preserveMetadata: boolean;
 };
 
 export function settingsFingerprint(state: UiState) {
@@ -91,6 +96,8 @@ export function snapshotSettings(state: UiState): SettingsSnap {
     unsharpAmount: state.unsharpAmount,
     unsharpRadius: state.unsharpRadius,
     unsharpThreshold: state.unsharpThreshold,
+    dpi: state.dpi, printUnit: state.printUnit, paperW: state.paperW, paperH: state.paperH,
+    exportFormat: state.exportFormat, quality: state.quality, jpegBackground: state.jpegBackground, preserveMetadata: state.preserveMetadata,
   };
 }
 
@@ -109,6 +116,7 @@ export function createInitialState(): UiState {
     sourceWidth: 0,
     sourceHeight: 0,
     sourceName: "",
+    sourceRevision: 0,
     sourceMime: "",
     sourceIsGif: false,
     overview: false,
@@ -126,6 +134,8 @@ export function createInitialState(): UiState {
     redoDepth: 0,
     installReady: false,
     iosInstall: false,
+    exporting: false,
+    updateReady: false,
   };
 }
 
@@ -154,6 +164,10 @@ export function hydrateSettings(saved: PersistableSettings): UiState {
 
 export type Action =
   | { type: "hydrate"; saved: PersistableSettings }
+  | { type: "setExporting"; value: boolean }
+  | { type: "setUpdateReady"; value: boolean }
+  | { type: "setJpegBackground"; value: string }
+  | { type: "setPreserveMetadata"; value: boolean }
   | { type: "setTheme"; theme: Theme }
   | { type: "setLocale"; locale: Locale }
   | { type: "setKernel"; kernel: KernelId }
@@ -203,6 +217,10 @@ export type Action =
 
 export function reducer(state: UiState, action: Action): UiState {
   switch (action.type) {
+    case "setExporting": return { ...state, exporting: action.value };
+    case "setUpdateReady": return { ...state, updateReady: action.value };
+    case "setJpegBackground": return { ...state, jpegBackground: action.value };
+    case "setPreserveMetadata": return { ...state, preserveMetadata: action.value };
     case "hydrate":
       return { ...state, ...action.saved };
     case "setTheme":
@@ -255,6 +273,7 @@ export function reducer(state: UiState, action: Action): UiState {
       return {
         ...state,
         hasSource: true,
+        sourceRevision: state.sourceRevision + 1,
         sourceWidth: action.width,
         sourceHeight: action.height,
         sourceName: action.name,

@@ -20,6 +20,8 @@ export type PersistableSettings = {
   printUnit: PrintUnit;
   versusA: KernelId;
   versusB: KernelId;
+  jpegBackground: string;
+  preserveMetadata: boolean;
 };
 
 export const DEFAULTS: PersistableSettings = {
@@ -40,6 +42,8 @@ export const DEFAULTS: PersistableSettings = {
   printUnit: "in",
   versusA: "photonic",
   versusB: "lanczos",
+  jpegBackground: "#ffffff",
+  preserveMetadata: true,
 };
 
 export function isKernelId(value: unknown): value is KernelId {
@@ -67,6 +71,10 @@ export function detectBrowserLocale(): Locale {
   return /^ru\b/i.test(navigator.language) ? "ru" : "en";
 }
 
+function bounded(value: unknown, min: number, max: number, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+}
+
 export function loadSettings(): PersistableSettings {
   const browserLocale = detectBrowserLocale();
   try {
@@ -87,7 +95,6 @@ export function loadSettings(): PersistableSettings {
     const versusB = isKernelId(parsed.versusB) ? parsed.versusB : DEFAULTS.versusB;
     return {
       ...DEFAULTS,
-      ...parsed,
       kernel,
       locale,
       theme,
@@ -96,6 +103,17 @@ export function loadSettings(): PersistableSettings {
       dpi,
       versusA,
       versusB,
+      jpegBackground: typeof parsed.jpegBackground === "string" && /^#[0-9a-f]{6}$/i.test(parsed.jpegBackground) ? parsed.jpegBackground : DEFAULTS.jpegBackground,
+      preserveMetadata: parsed.preserveMetadata !== false,
+      lanczosA: bounded(parsed.lanczosA, 2, 4, 3),
+      lockAspect: parsed.lockAspect !== false,
+      colorSpace: parsed.colorSpace === "srgb" && kernel !== "photonic" ? "srgb" : "linear",
+      unsharpEnabled: parsed.unsharpEnabled === true,
+      unsharpAmount: bounded(parsed.unsharpAmount, 0, 200, 80),
+      unsharpRadius: bounded(parsed.unsharpRadius, 0.4, 2.5, 0.6),
+      unsharpThreshold: bounded(parsed.unsharpThreshold, 0, 255, 2),
+      exportFormat: parsed.exportFormat === "png" || parsed.exportFormat === "jpeg" || parsed.exportFormat === "webp" ? parsed.exportFormat : "original",
+      quality: bounded(parsed.quality, 0.4, 1, 0.92),
     };
   } catch {
     return { ...DEFAULTS, locale: browserLocale, printUnit: browserLocale === "ru" ? "mm" : "in" };
@@ -121,7 +139,9 @@ export function saveSettings(state: PersistableSettings) {
     printUnit: state.printUnit,
     versusA: state.versusA,
     versusB: state.versusB,
-    settingsRev: 2,
+    jpegBackground: state.jpegBackground,
+    preserveMetadata: state.preserveMetadata,
+    settingsRev: 3,
   };
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));

@@ -60,3 +60,6 @@ next-env.d.ts
 AGENTS.md
 CLAUDE.md
 Photonic_Technical_Concept.docx
+
+/playwright-report/
+/test-results/

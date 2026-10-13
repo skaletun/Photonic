@@ -19,14 +19,33 @@ declare global {
 
 const INBOX = "photonic-inbox";
 
-export function registerServiceWorker() {
-  if (typeof window === "undefined") return;
-  if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
-  window.addEventListener("load", () => {
-    void navigator.serviceWorker.register(withBase("/sw.js"), {
-      scope: withBase("/"),
-    });
-  });
+export function registerServiceWorker(onUpdate?: (available: boolean) => void) {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !window.isSecureContext) return () => {};
+  let disposed = false;
+  let registration: ServiceWorkerRegistration | null = null;
+  const check = () => { if (!disposed) onUpdate?.(Boolean(registration?.waiting && navigator.serviceWorker.controller)); };
+  const install = () => {
+    const worker = registration?.installing;
+    worker?.addEventListener("statechange", check);
+    check();
+  };
+  const register = () => {
+    void navigator.serviceWorker.register(withBase("/sw.js"), { scope: withBase("/") }).then(reg => {
+      if (disposed) return;
+      registration = reg; reg.addEventListener("updatefound", install); install();
+    }).catch(() => {});
+  };
+  if (document.readyState === "complete") register();
+  else window.addEventListener("load", register, { once: true });
+  return () => { disposed = true; window.removeEventListener("load", register); registration?.removeEventListener("updatefound", install); };
+}
+
+export async function applyAppUpdate() {
+  if (!("serviceWorker" in navigator)) return;
+  const registration = await navigator.serviceWorker.getRegistration(withBase("/"));
+  if (!registration?.waiting) return;
+  navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
+  registration.waiting.postMessage({ type: "SKIP_WAITING" });
 }
 
 export function bindFileLaunch(onFiles: (files: File[]) => void) {

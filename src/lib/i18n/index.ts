@@ -31,6 +31,7 @@ const ERROR_KEYS: Record<ErrorCode, MessageKey> = {
   dest_hard: "error.dest_hard",
   dest_warn: "error.dest_warn",
   batch_too_large: "error.batch_too_large",
+  memory_budget: "error.memory_budget",
 };
 
 export function interpolate(template: string, params?: MessageParams) {

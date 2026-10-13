@@ -1,4 +1,5 @@
 import { ACCEPT_EXT, ACCEPT_TYPES, MAX_AREA, MAX_SIDE } from "../config";
+import { memoryBudget } from "../memory";
 import { AppError } from "../errors";
 import { readPassport, type ImagePassport } from "./exif";
 import { decodeHeifBuffer } from "./heif";
@@ -111,6 +112,8 @@ export async function decodeFile(file: File): Promise<DecodedImage> {
     bitmap.close();
     throw new AppError("frame_too_large", { w: width, h: height, max: MAX_SIDE });
   }
+
+  if (width * height * 12 > memoryBudget()) { bitmap.close(); throw new AppError("memory_budget"); }
 
   const canvas = document.createElement("canvas");
   canvas.width = width;

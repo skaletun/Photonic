@@ -38,15 +38,15 @@ export function unsharpMask(
   const { kernel, radiusPx } = gaussianKernel(opts.radius ?? 0.6);
 
   const src = data;
-  const tmp = new Float32Array(width * height * 4);
-  const blurred = new Float32Array(width * height * 4);
-
-  for (let y = 0; y < height; y += 1) {
+  const rows = new Map<number, Float32Array>();
+  const horizontal = (y: number) => {
+    const existing = rows.get(y);
+    if (existing) return existing;
+    const row = new Float32Array(width * 3);
     for (let x = 0; x < width; x += 1) {
       let r = 0;
       let g = 0;
       let b = 0;
-      let a = 0;
       for (let k = -radiusPx; k <= radiusPx; k += 1) {
         const xx = reflect(x + k, width);
         const w = kernel[k + radiusPx];
@@ -54,48 +54,36 @@ export function unsharpMask(
         r += src[i] * w;
         g += src[i + 1] * w;
         b += src[i + 2] * w;
-        a += src[i + 3] * w;
       }
-      const o = (y * width + x) * 4;
-      tmp[o] = r;
-      tmp[o + 1] = g;
-      tmp[o + 2] = b;
-      tmp[o + 3] = a;
+      const o = x * 3;
+      row[o] = r; row[o + 1] = g; row[o + 2] = b;
     }
-  }
+    rows.set(y, row);
+    return row;
+  };
 
   for (let y = 0; y < height; y += 1) {
+    // Cache every original row needed before writing sharpened pixels in place.
+    for (let k = -radiusPx; k <= radiusPx; k += 1) horizontal(reflect(y + k, height));
     for (let x = 0; x < width; x += 1) {
       let r = 0;
       let g = 0;
       let b = 0;
-      let a = 0;
       for (let k = -radiusPx; k <= radiusPx; k += 1) {
         const yy = reflect(y + k, height);
         const w = kernel[k + radiusPx];
-        const i = (yy * width + x) * 4;
-        r += tmp[i] * w;
-        g += tmp[i + 1] * w;
-        b += tmp[i + 2] * w;
-        a += tmp[i + 3] * w;
+        const row = rows.get(yy)!;
+        const i = x * 3;
+        r += row[i] * w; g += row[i + 1] * w; b += row[i + 2] * w;
       }
       const o = (y * width + x) * 4;
-      blurred[o] = r;
-      blurred[o + 1] = g;
-      blurred[o + 2] = b;
-      blurred[o + 3] = a;
+      const blur = [Math.fround(r), Math.fround(g), Math.fround(b)];
+      for (let c = 0; c < 3; c += 1) {
+        const diff = src[o + c] - blur[c];
+        if (Math.abs(diff) >= threshold) src[o + c] = Math.round(src[o + c] + amount * diff);
+      }
     }
-  }
-
-  for (let i = 0; i < src.length; i += 4) {
-    for (let c = 0; c < 3; c += 1) {
-      const orig = src[i + c];
-      const blur = blurred[i + c];
-      const diff = orig - blur;
-      if (Math.abs(diff) < threshold) continue;
-      const next = orig + amount * diff;
-      src[i + c] = Math.round(next);
-    }
+    for (const key of rows.keys()) if (key < y - radiusPx) rows.delete(key);
   }
 
   return src;
