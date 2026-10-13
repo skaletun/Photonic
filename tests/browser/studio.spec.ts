@@ -28,6 +28,9 @@ test.beforeEach(async ({ page }, testInfo) => {
 test("layout, sample loading, both themes and accessible export", async ({ page }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  await expect(page.locator("body")).toHaveCSS("margin", "0px");
+  await expect(page.locator("body")).toHaveCSS("box-sizing", "border-box");
+  await expect(page.locator("body")).toHaveCSS("font-family", /IBM Plex Sans/);
   await page.evaluate(() => document.fonts.ready);
   await expect
     .poll(() =>
@@ -48,6 +51,8 @@ test("layout, sample loading, both themes and accessible export", async ({ page 
   if (await sample.isVisible()) await sample.click();
   else await page.locator('input[type="file"]').setInputFiles(path.resolve("public/samples/photo.jpg"));
   await ready(page);
+  await expect(page.locator(".stage-empty")).toBeHidden();
+  await expect(page.locator(".versus-tags")).toBeHidden();
   const button = page.getByRole("button", { name: "Скачать", exact: true });
   const rect = await button.boundingBox();
   const viewport = page.viewportSize()!;
