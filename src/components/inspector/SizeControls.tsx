@@ -5,17 +5,40 @@ import { MAX_PERCENT, MAX_SIDE, MIN_PERCENT } from "@/lib/config";
 import { clampInt } from "@/lib/limits";
 import { fitInsidePaper, paperToPx } from "@/lib/print";
 import type { DestinationChange } from "./types";
-export function SizeControls({ onDestChange, beforeChange }: { onDestChange: DestinationChange; beforeChange: () => void }) {
- const {state,dispatch}=useAppState(); const {t:tr}=useT();
- const aspect = state.sourceHeight ? state.sourceWidth / state.sourceHeight : 1;
- const percent = state.hasSource ? Math.round(state.destW / state.sourceWidth * 100) : 100;
- function applyProfile(scale: number) { if(state.hasSource) onDestChange(Math.max(1, Math.round(state.sourceWidth*scale)),Math.max(1,Math.round(state.sourceHeight*scale)),null); }
- function applyPaper(width:number,height:number,unit=state.printUnit,dpi=state.dpi,lockAspect=state.lockAspect) {
- const px=paperToPx(width,height,unit,dpi);const dest=fitInsidePaper(state.sourceWidth,state.sourceHeight,px.width,px.height,lockAspect); onDestChange(dest.width,dest.height,{width,height}); }
- return (
-<div className="size-dock">
-        <span className="adv-label">{tr("enlarger.size")}</span>
-        <div className="field-row" id="size-panel">
+export function SizeControls({
+  onDestChange,
+  beforeChange,
+}: {
+  onDestChange: DestinationChange;
+  beforeChange: () => void;
+}) {
+  const { state, dispatch } = useAppState();
+  const { t: tr } = useT();
+  const aspect = state.sourceHeight ? state.sourceWidth / state.sourceHeight : 1;
+  const percent = state.hasSource ? Math.round((state.destW / state.sourceWidth) * 100) : 100;
+  function applyProfile(scale: number) {
+    if (state.hasSource)
+      onDestChange(
+        Math.max(1, Math.round(state.sourceWidth * scale)),
+        Math.max(1, Math.round(state.sourceHeight * scale)),
+        null,
+      );
+  }
+  function applyPaper(
+    width: number,
+    height: number,
+    unit = state.printUnit,
+    dpi = state.dpi,
+    lockAspect = state.lockAspect,
+  ) {
+    const px = paperToPx(width, height, unit, dpi);
+    const dest = fitInsidePaper(state.sourceWidth, state.sourceHeight, px.width, px.height, lockAspect);
+    onDestChange(dest.width, dest.height, { width, height });
+  }
+  return (
+    <div className="size-dock">
+      <span className="adv-label">{tr("enlarger.size")}</span>
+      <div className="field-row" id="size-panel">
         <div className="field">
           <label htmlFor="width-px">{tr("enlarger.width")}</label>
           <input
@@ -113,7 +136,7 @@ export function SizeControls({ onDestChange, beforeChange }: { onDestChange: Des
             );
           })}
         </div>
-        </div>
       </div>
- );
+    </div>
+  );
 }

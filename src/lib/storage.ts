@@ -86,8 +86,7 @@ export function loadSettings(): PersistableSettings {
     const kernel = isKernelId(parsed.kernel) ? parsed.kernel : DEFAULTS.kernel;
     const locale = parsed.locale === "en" || parsed.locale === "ru" ? parsed.locale : browserLocale;
     const rev = typeof parsed.settingsRev === "number" ? parsed.settingsRev : 0;
-    const theme =
-      rev >= 2 && (parsed.theme === "light" || parsed.theme === "dark") ? parsed.theme : DEFAULTS.theme;
+    const theme = rev >= 2 && (parsed.theme === "light" || parsed.theme === "dark") ? parsed.theme : DEFAULTS.theme;
     const viewMode = isViewMode(parsed.viewMode) ? parsed.viewMode : DEFAULTS.viewMode;
     const printUnit = isPrintUnit(parsed.printUnit) ? parsed.printUnit : locale === "ru" ? "mm" : "in";
     const dpi = typeof parsed.dpi === "number" ? clampDpi(parsed.dpi) : DEFAULTS.dpi;
@@ -103,7 +102,10 @@ export function loadSettings(): PersistableSettings {
       dpi,
       versusA,
       versusB,
-      jpegBackground: typeof parsed.jpegBackground === "string" && /^#[0-9a-f]{6}$/i.test(parsed.jpegBackground) ? parsed.jpegBackground : DEFAULTS.jpegBackground,
+      jpegBackground:
+        typeof parsed.jpegBackground === "string" && /^#[0-9a-f]{6}$/i.test(parsed.jpegBackground)
+          ? parsed.jpegBackground
+          : DEFAULTS.jpegBackground,
       preserveMetadata: parsed.preserveMetadata !== false,
       lanczosA: bounded(parsed.lanczosA, 2, 4, 3),
       lockAspect: parsed.lockAspect !== false,
@@ -112,7 +114,10 @@ export function loadSettings(): PersistableSettings {
       unsharpAmount: bounded(parsed.unsharpAmount, 0, 200, 80),
       unsharpRadius: bounded(parsed.unsharpRadius, 0.4, 2.5, 0.6),
       unsharpThreshold: bounded(parsed.unsharpThreshold, 0, 255, 2),
-      exportFormat: parsed.exportFormat === "png" || parsed.exportFormat === "jpeg" || parsed.exportFormat === "webp" ? parsed.exportFormat : "original",
+      exportFormat:
+        parsed.exportFormat === "png" || parsed.exportFormat === "jpeg" || parsed.exportFormat === "webp"
+          ? parsed.exportFormat
+          : "original",
       quality: bounded(parsed.quality, 0.4, 1, 0.92),
     };
   } catch {

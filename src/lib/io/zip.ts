@@ -94,25 +94,38 @@ export async function zipBlobs(entries: { name: string; blob: Blob }[], signal?:
         if (chunk.done) break;
         for (const b of chunk.value) crc = CRC_TABLE[(crc ^ b) & 0xff] ^ (crc >>> 8);
       }
-    } finally { reader.releaseLock(); }
+    } finally {
+      reader.releaseLock();
+    }
     crc = (crc ^ 0xffffffff) >>> 0;
     if (entry.blob.size > 0xffffffff || offset + entry.blob.size > 0xffffffff) throw new RangeError("ZIP32 size limit");
     const local = new Uint8Array(30 + name.length);
     local.set([0x50, 0x4b, 0x03, 0x04, 20, 0, 0, 8], 0);
-    local.set(u32(crc), 14); local.set(u32(entry.blob.size), 18); local.set(u32(entry.blob.size), 22);
-    local.set(u16(name.length), 26); local.set(name, 30);
+    local.set(u32(crc), 14);
+    local.set(u32(entry.blob.size), 18);
+    local.set(u32(entry.blob.size), 22);
+    local.set(u16(name.length), 26);
+    local.set(name, 30);
     const central = new Uint8Array(46 + name.length);
     central.set([0x50, 0x4b, 0x01, 0x02, 20, 0, 20, 0, 0, 8], 0);
-    central.set(u32(crc), 16); central.set(u32(entry.blob.size), 20); central.set(u32(entry.blob.size), 24);
-    central.set(u16(name.length), 28); central.set(u32(offset), 42); central.set(name, 46);
-    parts.push(local, entry.blob); centrals.push(central);
+    central.set(u32(crc), 16);
+    central.set(u32(entry.blob.size), 20);
+    central.set(u32(entry.blob.size), 24);
+    central.set(u16(name.length), 28);
+    central.set(u32(offset), 42);
+    central.set(name, 46);
+    parts.push(local, entry.blob);
+    centrals.push(central);
     offset += local.length + entry.blob.size;
   }
   const centralSize = centrals.reduce((sum, part) => sum + part.length, 0);
   if (offset + centralSize > 0xffffffff) throw new RangeError("ZIP32 size limit");
   const end = new Uint8Array(22);
-  end.set([0x50, 0x4b, 0x05, 0x06]); end.set(u16(entries.length), 8); end.set(u16(entries.length), 10);
-  end.set(u32(centralSize), 12); end.set(u32(offset), 16);
+  end.set([0x50, 0x4b, 0x05, 0x06]);
+  end.set(u16(entries.length), 8);
+  end.set(u16(entries.length), 10);
+  end.set(u32(centralSize), 12);
+  end.set(u32(offset), 16);
   return new Blob([...parts, ...centrals, end], { type: "application/zip" });
 }
 
@@ -121,7 +134,9 @@ export function uniqueName(name: string, used: Set<string>) {
   const dot = safe.lastIndexOf(".");
   const stem = dot > 0 ? safe.slice(0, dot) : safe;
   const ext = dot > 0 ? safe.slice(dot) : "";
-  let result = safe; let suffix = 2;
+  let result = safe;
+  let suffix = 2;
   while (used.has(result)) result = `${stem}-${suffix++}${ext}`;
-  used.add(result); return result;
+  used.add(result);
+  return result;
 }

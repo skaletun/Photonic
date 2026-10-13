@@ -19,7 +19,22 @@ const paths = {
   sliders: "M5 4v16M12 4v16M19 4v16M2 8h6M9 15h6M16 10h6",
 } as const;
 export function Icon({ name, ...props }: SVGProps<SVGSVGElement> & { name: keyof typeof paths }) {
-  return <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-    <path d={paths[name]} />{name === "sun" ? <circle cx="12" cy="12" r="4" /> : null}{name === "help" ? <circle cx="12" cy="12" r="9" /> : null}
-  </svg>;
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width="20"
+      height="20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d={paths[name]} />
+      {name === "sun" ? <circle cx="12" cy="12" r="4" /> : null}
+      {name === "help" ? <circle cx="12" cy="12" r="9" /> : null}
+    </svg>
+  );
 }

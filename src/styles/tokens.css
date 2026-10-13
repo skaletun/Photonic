@@ -6,20 +6,48 @@
   --split: 50%;
 }
 html[data-theme="light"] {
-  --ink: #f4f2ed; --ink-2: #eae7e0; --plate: #faf9f6;
-  --paper: #242b2a; --paper-dim: #66706b; --text: #242b2a; --text-mute: #66706b;
-  --signal: #246d64; --signal-bright: #246d64; --signal-soft: #e3eee9;
-  --danger: #ac443a; --line: #d9dcd5; --line-strong: #9aaba4;
-  --brass: #66706b; --brass-deep: #86918a; --field: #ffffff;
-  --canvas: #e3e4df; --canvas-line: rgba(80, 94, 86, .055);
-  --shadow: 0 12px 40px rgba(30, 42, 34, .12); --export-ink: #ffffff; color-scheme: light;
+  --ink: #f4f2ed;
+  --ink-2: #eae7e0;
+  --plate: #faf9f6;
+  --paper: #242b2a;
+  --paper-dim: #66706b;
+  --text: #242b2a;
+  --text-mute: #66706b;
+  --signal: #246d64;
+  --signal-bright: #246d64;
+  --signal-soft: #e3eee9;
+  --danger: #ac443a;
+  --line: #d9dcd5;
+  --line-strong: #9aaba4;
+  --brass: #66706b;
+  --brass-deep: #86918a;
+  --field: #ffffff;
+  --canvas: #e3e4df;
+  --canvas-line: rgba(80, 94, 86, 0.055);
+  --shadow: 0 12px 40px rgba(30, 42, 34, 0.12);
+  --export-ink: #ffffff;
+  color-scheme: light;
 }
 html[data-theme="dark"] {
-  --ink: #181b1a; --ink-2: #222725; --plate: #1c201e;
-  --paper: #edf0e9; --paper-dim: #a6afa8; --text: #edf0e9; --text-mute: #a6afa8;
-  --signal: #83baa4; --signal-bright: #83baa4; --signal-soft: #2c3932;
-  --danger: #f19788; --line: #343c36; --line-strong: #687d6f;
-  --brass: #a6afa8; --brass-deep: #687d6f; --field: #252b27;
-  --canvas: #111513; --canvas-line: rgba(180, 195, 185, .035);
-  --shadow: 0 12px 40px rgba(0, 0, 0, .3); --export-ink: #13251b; color-scheme: dark;
+  --ink: #181b1a;
+  --ink-2: #222725;
+  --plate: #1c201e;
+  --paper: #edf0e9;
+  --paper-dim: #a6afa8;
+  --text: #edf0e9;
+  --text-mute: #a6afa8;
+  --signal: #83baa4;
+  --signal-bright: #83baa4;
+  --signal-soft: #2c3932;
+  --danger: #f19788;
+  --line: #343c36;
+  --line-strong: #687d6f;
+  --brass: #a6afa8;
+  --brass-deep: #687d6f;
+  --field: #252b27;
+  --canvas: #111513;
+  --canvas-line: rgba(180, 195, 185, 0.035);
+  --shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  --export-ink: #13251b;
+  color-scheme: dark;
 }

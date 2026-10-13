@@ -4,8 +4,12 @@ import { reflectIndex } from "./separable";
 import type { Region, ResampleEngineOptions } from "./types";
 
 export type PhotonicFields = {
-  L: Float32Array; A: Float32Array; ca: Float32Array; cb: Float32Array;
-  mn: Float32Array; mx: Float32Array;
+  L: Float32Array;
+  A: Float32Array;
+  ca: Float32Array;
+  cb: Float32Array;
+  mn: Float32Array;
+  mx: Float32Array;
 };
 type ErrorField = { data: Float32Array; area: Region; srcW: number; srcH: number };
 
@@ -58,7 +62,7 @@ export async function createConsistencyError(
         }
       }
     }
-    onProgress?.(0.5 * (band + strip.h - dy0) / (dy1 - dy0));
+    onProgress?.((0.5 * (band + strip.h - dy0)) / (dy1 - dy0));
   }
   for (let sy = y; sy < bottom; sy += 1) {
     for (let sx = x; sx < right; sx += 1) {
@@ -71,15 +75,21 @@ export async function createConsistencyError(
 }
 
 function sampleError(error: ErrorField, x: number, y: number) {
-  const x0 = Math.floor(x); const y0 = Math.floor(y);
-  const tx = x - x0; const ty = y - y0;
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const tx = x - x0;
+  const ty = y - y0;
   const at = (sx: number, sy: number) => {
     const xx = reflectIndex(sx, error.srcW) - error.area.x;
     const yy = reflectIndex(sy, error.srcH) - error.area.y;
     return error.data[yy * error.area.w + xx];
   };
-  return at(x0, y0) * (1 - tx) * (1 - ty) + at(x0 + 1, y0) * tx * (1 - ty)
-    + at(x0, y0 + 1) * (1 - tx) * ty + at(x0 + 1, y0 + 1) * tx * ty;
+  return (
+    at(x0, y0) * (1 - tx) * (1 - ty) +
+    at(x0 + 1, y0) * tx * (1 - ty) +
+    at(x0, y0 + 1) * (1 - tx) * ty +
+    at(x0 + 1, y0 + 1) * tx * ty
+  );
 }
 
 export function correctStrip(fields: PhotonicFields, area: Region, options: ResampleEngineOptions, error: ErrorField) {
@@ -89,7 +99,9 @@ export function correctStrip(fields: PhotonicFields, area: Region, options: Resa
     for (let x = 0; x < area.w; x += 1) {
       const i = y * area.w + x;
       if (fields.A[i] < 1e-8) continue;
-      const lo = fields.mn[i]; const hi = fields.mx[i]; const span = hi - lo;
+      const lo = fields.mn[i];
+      const hi = fields.mx[i];
+      const span = hi - lo;
       const gain = span > 1e-6 ? IBP_LAMBDA * Math.min(1, span / SPAN_REF) : 0;
       const cx = (area.x + x + 0.5) / scaleX - 0.5;
       const cy = (area.y + y + 0.5) / scaleY - 0.5;

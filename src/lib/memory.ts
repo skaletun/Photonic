@@ -3,7 +3,8 @@ import type { KernelId } from "./config";
 export function memoryBudget() {
   if (typeof navigator === "undefined") return 768 * 1024 * 1024;
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  const mobile = /iPhone|iPad|Android/.test(navigator.userAgent) ||
+  const mobile =
+    /iPhone|iPad|Android/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   return (mobile || (memory !== undefined && memory <= 4) ? 256 : 768) * 1024 * 1024;
 }

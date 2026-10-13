@@ -107,7 +107,9 @@ export class ResampleClient {
     this.pending.clear();
   }
 
-  private abortError() { return Object.assign(new Error("aborted"), { name: "AbortError" }); }
+  private abortError() {
+    return Object.assign(new Error("aborted"), { name: "AbortError" });
+  }
   private cancel(id: number) {
     this.pending.get(id)?.reject(this.abortError());
     this.pending.delete(id);
@@ -118,7 +120,8 @@ export class ResampleClient {
     if (id === undefined) return;
     const job = this.pending.get(id);
     if (!job) return;
-    this.activeId = id; this.activeKind = job.options.kind ?? "preview";
+    this.activeId = id;
+    this.activeKind = job.options.kind ?? "preview";
     this.worker.postMessage({ type: "resample", jobId: id, options: job.options });
   }
 
@@ -132,7 +135,10 @@ export class ResampleClient {
     const job = this.pending.get(msg.jobId);
     if (!job) return;
     this.pending.delete(msg.jobId);
-    if (this.activeId === msg.jobId) { this.activeId = 0; this.activeKind = ""; }
+    if (this.activeId === msg.jobId) {
+      this.activeId = 0;
+      this.activeKind = "";
+    }
     this.startNext();
 
     if (msg.type === "aborted") {

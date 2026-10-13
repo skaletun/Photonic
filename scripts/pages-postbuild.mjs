@@ -12,7 +12,7 @@ if (!existsSync(out)) {
 writeFileSync(join(out, ".nojekyll"), "");
 
 function filesIn(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
     return entry.isDirectory() ? filesIn(path) : [path];
   });
@@ -23,5 +23,8 @@ for (const file of assets) digest.update(readFileSync(file));
 const workerPath = join(out, "sw.js");
 let worker = readFileSync(workerPath, "utf8");
 worker = worker.replace(/photonic-shell-v3/g, `photonic-shell-${digest.digest("hex").slice(0, 12)}`);
-worker = worker.replace('const PRECACHE = [', `const PRECACHE = [\n${assets.map(file => JSON.stringify("./" + file.slice(out.length + 1).replaceAll("\\", "/"))).join(",\n")},`);
+worker = worker.replace(
+  "const PRECACHE = [",
+  `const PRECACHE = [\n${assets.map((file) => JSON.stringify("./" + file.slice(out.length + 1).replaceAll("\\", "/"))).join(",\n")},`,
+);
 writeFileSync(workerPath, worker);

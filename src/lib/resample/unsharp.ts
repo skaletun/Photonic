@@ -56,7 +56,9 @@ export function unsharpMask(
         b += src[i + 2] * w;
       }
       const o = x * 3;
-      row[o] = r; row[o + 1] = g; row[o + 2] = b;
+      row[o] = r;
+      row[o + 1] = g;
+      row[o + 2] = b;
     }
     rows.set(y, row);
     return row;
@@ -74,7 +76,9 @@ export function unsharpMask(
         const w = kernel[k + radiusPx];
         const row = rows.get(yy)!;
         const i = x * 3;
-        r += row[i] * w; g += row[i + 1] * w; b += row[i + 2] * w;
+        r += row[i] * w;
+        g += row[i + 1] * w;
+        b += row[i + 2] * w;
       }
       const o = (y * width + x) * 4;
       const blur = [Math.fround(r), Math.fround(g), Math.fround(b)];

@@ -188,7 +188,6 @@ async function renderPass(options: ResampleEngineOptions, tables: Tables, fields
   const residual = downX || downY ? HALO_RESIDUAL_DOWN : HALO_RESIDUAL;
   const lumaPatch = new Float32Array(9);
 
-
   const { lumaX, lumaY, chromaX, chromaY } = tables;
   const out = fields ? null : new Uint8ClampedArray(rw * rh * 4);
   const destL = fields?.L;
@@ -438,9 +437,7 @@ async function renderPass(options: ResampleEngineOptions, tables: Tables, fields
         const cbOut = softHaloClamp(cb * invA, cell.mnB, cell.mxB, residual);
         const feat = luma.features;
         const w = feat ? engineWeights(feat) : { line: 0, form: 1, texture: 0 };
-        const snapG = feat
-          ? snapGainFromMag(feat.mag) * w.line * (1 - feat.noise) * feat.confidence
-          : 0;
+        const snapG = feat ? snapGainFromMag(feat.mag) * w.line * (1 - feat.noise) * feat.confidence : 0;
         const line = edgeSnapInRange(
           softHaloClamp(rawL, luma.mnLine, luma.mxLine, residual),
           luma.mnLine,
@@ -475,9 +472,14 @@ async function renderPass(options: ResampleEngineOptions, tables: Tables, fields
 }
 
 function makeFields(length: number): PhotonicFields {
-  return { L: new Float32Array(length), A: new Float32Array(length),
-    ca: new Float32Array(length), cb: new Float32Array(length),
-    mn: new Float32Array(length), mx: new Float32Array(length) };
+  return {
+    L: new Float32Array(length),
+    A: new Float32Array(length),
+    ca: new Float32Array(length),
+    cb: new Float32Array(length),
+    mn: new Float32Array(length),
+    mx: new Float32Array(length),
+  };
 }
 
 /** Two bounded passes preserve global lightness correction, including for a region. */
@@ -522,7 +524,7 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
         encodeLab(fields.L[i], fields.ca[i], fields.cb[i], fields.A[i], out, di);
       }
     }
-    onProgress?.(0.5 + 0.5 * (row + count) / region.h);
+    onProgress?.(0.5 + (0.5 * (row + count)) / region.h);
     await yieldTick();
   }
   return out;

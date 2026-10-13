@@ -23,13 +23,7 @@ function ascii(bytes: Uint8Array, start: number, len: number) {
 
 export function sniffMagic(bytes: Uint8Array) {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
-  if (
-    bytes.length >= 8 &&
-    bytes[0] === 0x89 &&
-    bytes[1] === 0x50 &&
-    bytes[2] === 0x4e &&
-    bytes[3] === 0x47
-  ) {
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
     return "image/png";
   }
   if (bytes.length >= 12 && ascii(bytes, 0, 4) === "RIFF" && ascii(bytes, 8, 4) === "WEBP") return "image/webp";
@@ -101,7 +95,11 @@ export async function decodeFile(file: File): Promise<DecodedImage> {
 
   let bitmap: ImageBitmap;
   try {
-    bitmap = await bitmapFromFile(new Blob([new Uint8Array(bytes)], { type: mime === "image/heic" ? "image/heic" : mime }), mime, bytes);
+    bitmap = await bitmapFromFile(
+      new Blob([new Uint8Array(bytes)], { type: mime === "image/heic" ? "image/heic" : mime }),
+      mime,
+      bytes,
+    );
   } catch (error) {
     if (error instanceof AppError) throw error;
     throw new AppError("decode_failed");
@@ -113,7 +111,10 @@ export async function decodeFile(file: File): Promise<DecodedImage> {
     throw new AppError("frame_too_large", { w: width, h: height, max: MAX_SIDE });
   }
 
-  if (width * height * 12 > memoryBudget()) { bitmap.close(); throw new AppError("memory_budget"); }
+  if (width * height * 12 > memoryBudget()) {
+    bitmap.close();
+    throw new AppError("memory_budget");
+  }
 
   const canvas = document.createElement("canvas");
   canvas.width = width;

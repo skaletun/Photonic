@@ -39,7 +39,9 @@ self.onmessage = async (event: MessageEvent<Incoming>) => {
 
     const pixels = await resampleFrame(source, opts, {
       shouldAbort,
-      onProgress: (value) => { if (!shouldAbort()) self.postMessage({ type: "progress", jobId, value }); },
+      onProgress: (value) => {
+        if (!shouldAbort()) self.postMessage({ type: "progress", jobId, value });
+      },
     });
 
     if (!pixels || shouldAbort()) {

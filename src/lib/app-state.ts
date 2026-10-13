@@ -20,6 +20,7 @@ export type UiState = PersistableSettings & {
   sourceHeight: number;
   sourceName: string;
   sourceRevision: number;
+  previewFingerprint: string;
   sourceMime: string;
   sourceIsGif: boolean;
   overview: boolean;
@@ -52,8 +53,14 @@ export type SettingsSnap = {
   unsharpAmount: number;
   unsharpRadius: number;
   unsharpThreshold: number;
-  dpi: number; printUnit: PrintUnit; paperW: number | null; paperH: number | null;
-  exportFormat: ExportFormat; quality: number; jpegBackground: string; preserveMetadata: boolean;
+  dpi: number;
+  printUnit: PrintUnit;
+  paperW: number | null;
+  paperH: number | null;
+  exportFormat: ExportFormat;
+  quality: number;
+  jpegBackground: string;
+  preserveMetadata: boolean;
 };
 
 export function settingsFingerprint(state: UiState) {
@@ -96,8 +103,14 @@ export function snapshotSettings(state: UiState): SettingsSnap {
     unsharpAmount: state.unsharpAmount,
     unsharpRadius: state.unsharpRadius,
     unsharpThreshold: state.unsharpThreshold,
-    dpi: state.dpi, printUnit: state.printUnit, paperW: state.paperW, paperH: state.paperH,
-    exportFormat: state.exportFormat, quality: state.quality, jpegBackground: state.jpegBackground, preserveMetadata: state.preserveMetadata,
+    dpi: state.dpi,
+    printUnit: state.printUnit,
+    paperW: state.paperW,
+    paperH: state.paperH,
+    exportFormat: state.exportFormat,
+    quality: state.quality,
+    jpegBackground: state.jpegBackground,
+    preserveMetadata: state.preserveMetadata,
   };
 }
 
@@ -117,6 +130,7 @@ export function createInitialState(): UiState {
     sourceHeight: 0,
     sourceName: "",
     sourceRevision: 0,
+    previewFingerprint: "",
     sourceMime: "",
     sourceIsGif: false,
     overview: false,
@@ -164,6 +178,7 @@ export function hydrateSettings(saved: PersistableSettings): UiState {
 
 export type Action =
   | { type: "hydrate"; saved: PersistableSettings }
+  | { type: "setPreviewFingerprint"; value: string }
   | { type: "setExporting"; value: boolean }
   | { type: "setUpdateReady"; value: boolean }
   | { type: "setJpegBackground"; value: string }
@@ -217,10 +232,16 @@ export type Action =
 
 export function reducer(state: UiState, action: Action): UiState {
   switch (action.type) {
-    case "setExporting": return { ...state, exporting: action.value };
-    case "setUpdateReady": return { ...state, updateReady: action.value };
-    case "setJpegBackground": return { ...state, jpegBackground: action.value };
-    case "setPreserveMetadata": return { ...state, preserveMetadata: action.value };
+    case "setPreviewFingerprint":
+      return { ...state, previewFingerprint: action.value };
+    case "setExporting":
+      return { ...state, exporting: action.value };
+    case "setUpdateReady":
+      return { ...state, updateReady: action.value };
+    case "setJpegBackground":
+      return { ...state, jpegBackground: action.value };
+    case "setPreserveMetadata":
+      return { ...state, preserveMetadata: action.value };
     case "hydrate":
       return { ...state, ...action.saved };
     case "setTheme":
@@ -274,6 +295,7 @@ export function reducer(state: UiState, action: Action): UiState {
         ...state,
         hasSource: true,
         sourceRevision: state.sourceRevision + 1,
+        previewFingerprint: "",
         sourceWidth: action.width,
         sourceHeight: action.height,
         sourceName: action.name,
@@ -335,4 +357,8 @@ export function reducer(state: UiState, action: Action): UiState {
     default:
       return state;
   }
+}
+
+export function previewIdentity(state: UiState) {
+  return `${state.sourceRevision}|${settingsFingerprint(state)}|${state.viewMode}|${state.versusA}|${state.versusB}`;
 }

@@ -11,7 +11,12 @@ import type { ResampleJobOptions, Region } from "@/lib/resample/types";
 import type { ResampleResult } from "@/lib/resample/client";
 
 export const EMPTY_PASSPORT: ImagePassport = {
-  hasExif: false, copyright: "", jpegApp1: null, tiff: null, icc: null, iccKind: "none",
+  hasExif: false,
+  copyright: "",
+  jpegApp1: null,
+  tiff: null,
+  icc: null,
+  iccKind: "none",
 };
 export type Runtime = {
   state: RefObject<UiState>;
@@ -28,11 +33,25 @@ export type Runtime = {
 export function currentScale(state: UiState) {
   return state.recipeScale ? state.recipeScale / 100 : state.sourceWidth ? state.destW / state.sourceWidth : 1;
 }
-export function jobOptions(state: UiState, extra: Partial<{ kernelId: KernelId; kind: string; destW: number; destH: number; region: Region }> = {}): ResampleJobOptions {
+export function jobOptions(
+  state: UiState,
+  extra: Partial<{ kernelId: KernelId; kind: string; destW: number; destH: number; region: Region }> = {},
+): ResampleJobOptions {
   const kernelId = extra.kernelId ?? state.kernel;
-  return { destW: state.destW, destH: state.destH, kernelId, a: state.lanczosA,
+  return {
+    destW: state.destW,
+    destH: state.destH,
+    kernelId,
+    a: state.lanczosA,
     colorSpace: kernelId === "photonic" ? "linear" : state.colorSpace,
-    unsharp: { enabled: state.unsharpEnabled, amount: state.unsharpAmount, radius: state.unsharpRadius, threshold: state.unsharpThreshold }, ...extra };
+    unsharp: {
+      enabled: state.unsharpEnabled,
+      amount: state.unsharpAmount,
+      radius: state.unsharpRadius,
+      threshold: state.unsharpThreshold,
+    },
+    ...extra,
+  };
 }
 export function resultImage(result: ResampleResult) {
   return new ImageData(result.data as Uint8ClampedArray<ArrayBuffer>, result.width, result.height);

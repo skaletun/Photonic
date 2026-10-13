@@ -132,8 +132,7 @@ export const en = {
   "kernel.bicubic.hint": "A common graphics default. Moderately sharp, without heavy ringing.",
   "kernel.lanczos.title": "Lanczos",
   "kernel.lanczos.use": "Classic sharp, with halos",
-  "kernel.lanczos.hint":
-    "Very sharp on contrast, with a halo around edges. Compare it with Photonic in Two methods.",
+  "kernel.lanczos.hint": "Very sharp on contrast, with a halo around edges. Compare it with Photonic in Two methods.",
   "kernel.sinc.title": "Sinc (Hann)",
   "kernel.sinc.use": "Expert, fewer halos",
   "kernel.sinc.hint": "A specialist windowed sinc. Softer lobes than Lanczos, slightly fewer halos.",
@@ -284,7 +283,8 @@ export const en = {
   "studio.labHint": "Use the loupe to pick a detail, then compare all methods on that area.",
   "studio.noSource": "Open an image to begin",
   "studio.actual": "Actual pixels",
-  "error.memory_budget": "This image size needs more memory than this device can safely provide. Choose a smaller size.",
+  "error.memory_budget":
+    "This image size needs more memory than this device can safely provide. Choose a smaller size.",
 } as const;
 
 export type MessageKey = keyof typeof en;

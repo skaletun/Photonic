@@ -1,22 +1,61 @@
 "use client";
 import { useAppState } from "../AppStateContext";
 import { useT } from "@/hooks/useT";
-import { DPI_PRESETS, convertPaper, fitInsidePaper, paperPresets, paperToPx, pxToIn, pxToMm, type PrintUnit } from "@/lib/print";
+import {
+  DPI_PRESETS,
+  convertPaper,
+  fitInsidePaper,
+  paperPresets,
+  paperToPx,
+  pxToIn,
+  pxToMm,
+  type PrintUnit,
+} from "@/lib/print";
 import type { DestinationChange } from "./types";
 function formatPaper(value: number, unit: PrintUnit) {
   if (!Number.isFinite(value)) return "";
   return unit === "mm" ? String(Number(value.toFixed(1))) : String(Number(value.toFixed(2)));
 }
 
-export function PrintControls({ onDestChange, beforeChange }: { onDestChange: DestinationChange; beforeChange: () => void }) {
- const {state,dispatch}=useAppState(); const {t:tr}=useT();
- const paperW = state.paperW ?? (state.hasSource ? (state.printUnit === "mm" ? pxToMm(state.destW,state.dpi) : pxToIn(state.destW,state.dpi)) : 0);
- const paperH = state.paperH ?? (state.hasSource ? (state.printUnit === "mm" ? pxToMm(state.destH,state.dpi) : pxToIn(state.destH,state.dpi)) : 0);
- function applyPaper(width:number,height:number,unit=state.printUnit,dpi=state.dpi,lockAspect=state.lockAspect) {
- beforeChange(); const px=paperToPx(width,height,unit,dpi);const dest=fitInsidePaper(state.sourceWidth,state.sourceHeight,px.width,px.height,lockAspect); onDestChange(dest.width,dest.height,{width,height}); }
- return (
-<details className="inspector-details print-dock">
-        <summary>{tr("studio.print")}</summary><div className="details-content">
+export function PrintControls({
+  onDestChange,
+  beforeChange,
+}: {
+  onDestChange: DestinationChange;
+  beforeChange: () => void;
+}) {
+  const { state, dispatch } = useAppState();
+  const { t: tr } = useT();
+  const paperW =
+    state.paperW ??
+    (state.hasSource
+      ? state.printUnit === "mm"
+        ? pxToMm(state.destW, state.dpi)
+        : pxToIn(state.destW, state.dpi)
+      : 0);
+  const paperH =
+    state.paperH ??
+    (state.hasSource
+      ? state.printUnit === "mm"
+        ? pxToMm(state.destH, state.dpi)
+        : pxToIn(state.destH, state.dpi)
+      : 0);
+  function applyPaper(
+    width: number,
+    height: number,
+    unit = state.printUnit,
+    dpi = state.dpi,
+    lockAspect = state.lockAspect,
+  ) {
+    beforeChange();
+    const px = paperToPx(width, height, unit, dpi);
+    const dest = fitInsidePaper(state.sourceWidth, state.sourceHeight, px.width, px.height, lockAspect);
+    onDestChange(dest.width, dest.height, { width, height });
+  }
+  return (
+    <details className="inspector-details print-dock">
+      <summary>{tr("studio.print")}</summary>
+      <div className="details-content">
         <p className="dock-hint">{tr("enlarger.printHint")}</p>
         <div className="field-row">
           <div className="field">
@@ -109,6 +148,7 @@ export function PrintControls({ onDestChange, beforeChange }: { onDestChange: De
             );
           })}
         </div>
-      </div></details>
- );
+      </div>
+    </details>
+  );
 }

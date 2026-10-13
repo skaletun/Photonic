@@ -9,11 +9,7 @@ import { AppError } from "../errors";
 export function formatToMime(format: ExportFormat, originalMime: string) {
   if (format === "original") {
     if (originalMime === "image/gif" || originalMime === "image/bmp") return "image/png";
-    if (
-      originalMime === "image/heic" ||
-      originalMime === "image/heif" ||
-      originalMime === "image/avif"
-    ) {
+    if (originalMime === "image/heic" || originalMime === "image/heif" || originalMime === "image/avif") {
       return "image/jpeg";
     }
     return originalMime;
@@ -40,14 +36,16 @@ export function encodeImageData(imageData: ImageData, mime: string, quality: num
   }
   if (mime === "image/jpeg") {
     const foreground = document.createElement("canvas");
-    foreground.width = imageData.width; foreground.height = imageData.height;
+    foreground.width = imageData.width;
+    foreground.height = imageData.height;
     const foregroundCtx = foreground.getContext("2d");
     if (!foregroundCtx) return Promise.reject(new AppError("canvas_unavailable"));
     foregroundCtx.putImageData(imageData, 0, 0);
     ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(foreground, 0, 0);
-    foreground.width = 0; foreground.height = 0;
+    foreground.width = 0;
+    foreground.height = 0;
   } else {
     ctx.putImageData(imageData, 0, 0);
   }
@@ -61,7 +59,10 @@ export function encodeImageData(imageData: ImageData, mime: string, quality: num
           reject(new AppError("encode_failed"));
           return;
         }
-        if (blob.type !== mime) { reject(new AppError("encode_failed")); return; }
+        if (blob.type !== mime) {
+          reject(new AppError("encode_failed"));
+          return;
+        }
         resolve(blob);
       },
       mime,
