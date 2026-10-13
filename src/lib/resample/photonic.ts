@@ -6,10 +6,10 @@
 
 import { BAND_ROWS } from "../config";
 import { TO_LINEAR, TO_SRGB, linearSrgbToOklab, linearToSrgbByte, oklabToLinearSrgb } from "./colorspace";
-import { applyDestLumaSnap, applyLumaConsistency } from "./photonic-consistency";
+import { correctStrip, createConsistencyError, type PhotonicFields } from "./photonic-strips";
 import { analyzePatch, engineWeights, EDGE_ANISO } from "./photonic-field";
 import { buildContribs, reflectIndex } from "./separable";
-import type { ResampleEngineOptions } from "./types";
+import type { Contribs, ResampleEngineOptions } from "./types";
 
 export { EDGE_ANISO, TEXTURE_STD } from "./photonic-field";
 
@@ -168,7 +168,9 @@ function neighborSpan(center: number, scale: number): [number, number] {
   return [Math.floor(center - half), Math.ceil(center + half)];
 }
 
-export async function resamplePhotonic(options: ResampleEngineOptions) {
+type Tables = { lumaX: Contribs; lumaY: Contribs; chromaX: Contribs; chromaY: Contribs };
+
+async function renderPass(options: ResampleEngineOptions, tables: Tables, fields?: PhotonicFields) {
   const { src, srcW, srcH, destW, destH, region, onProgress, shouldAbort } = options;
   if (!region && destW === srcW && destH === srcH) {
     return new Uint8ClampedArray(src);
@@ -185,22 +187,15 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
   const upscale = !downX && !downY;
   const residual = downX || downY ? HALO_RESIDUAL_DOWN : HALO_RESIDUAL;
   const lumaPatch = new Float32Array(9);
-  const fullFrame = rx === 0 && ry === 0 && rw === destW && rh === destH;
-  const useIbp = upscale && fullFrame;
-  const srcL = useIbp ? new Float32Array(srcW * srcH) : null;
 
-  const lumaX = buildContribs(srcW, destW, "photonic", 3, downX ? DOWNSCALE_AA : 1);
-  const lumaY = buildContribs(srcH, destH, "photonic", 3, downY ? DOWNSCALE_AA : 1);
-  const chromaX = buildContribs(srcW, destW, "mitchell", 2);
-  const chromaY = buildContribs(srcH, destH, "mitchell", 2);
-
-  const out = new Uint8ClampedArray(rw * rh * 4);
-  const destL = useIbp ? new Float32Array(rw * rh) : null;
-  const destA = useIbp ? new Float32Array(rw * rh) : null;
-  const destCa = useIbp ? new Float32Array(rw * rh) : null;
-  const destCb = useIbp ? new Float32Array(rw * rh) : null;
-  const destMn = useIbp ? new Float32Array(rw * rh) : null;
-  const destMx = useIbp ? new Float32Array(rw * rh) : null;
+  const { lumaX, lumaY, chromaX, chromaY } = tables;
+  const out = fields ? null : new Uint8ClampedArray(rw * rh * 4);
+  const destL = fields?.L;
+  const destA = fields?.A;
+  const destCa = fields?.ca;
+  const destCb = fields?.cb;
+  const destMn = fields?.mn;
+  const destMx = fields?.mx;
   const labRows = new Map<number, Float32Array>();
   const lumaCache = new Map<number, Float32Array>();
   const chromaCache = new Map<number, Float32Array>();
@@ -214,9 +209,6 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
       decodeLab(src, base + sx * 4, row, sx * 4);
     }
     labRows.set(sy, row);
-    if (srcL) {
-      for (let sx = 0; sx < srcW; sx += 1) srcL[sy * srcW + sx] = row[sx * 4];
-    }
     return row;
   };
 
@@ -434,10 +426,7 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
         }
         const di = ((band + dy) * rw + dx) * 4;
         if (A < 1e-8) {
-          out[di] = 0;
-          out[di + 1] = 0;
-          out[di + 2] = 0;
-          out[di + 3] = 0;
+          if (out) out.fill(0, di, di + 4);
           continue;
         }
         const invA = 1 / A;
@@ -448,9 +437,7 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
         const cbOut = softHaloClamp(cb * invA, cell.mnB, cell.mxB, residual);
         const feat = luma.features;
         const w = feat ? engineWeights(feat) : { line: 0, form: 1, texture: 0 };
-        const snapG = feat
-          ? snapGainFromMag(feat.mag) * w.line * (1 - feat.noise) * feat.confidence
-          : 0;
+        const snapG = feat ? snapGainFromMag(feat.mag) * w.line * (1 - feat.noise) * feat.confidence : 0;
         const line = edgeSnapInRange(
           softHaloClamp(rawL, luma.mnLine, luma.mxLine, residual),
           luma.mnLine,
@@ -472,54 +459,73 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
           destCb[pi] = cbOut;
           destMn[pi] = mn;
           destMx[pi] = mx;
-        } else {
+        } else if (out) {
           encodeLab(Lsig, caOut, cbOut, A, out, di);
         }
       }
     }
-    onProgress?.(useIbp ? ((band + bandH) / rh) * 0.8 : (band + bandH) / rh);
+    onProgress?.((band + bandH) / rh);
     await yieldTick();
   }
 
-  if (destL && destA && destCa && destCb && destMn && destMx && srcL) {
+  return out;
+}
+
+function makeFields(length: number): PhotonicFields {
+  return {
+    L: new Float32Array(length),
+    A: new Float32Array(length),
+    ca: new Float32Array(length),
+    cb: new Float32Array(length),
+    mn: new Float32Array(length),
+    mx: new Float32Array(length),
+  };
+}
+
+/** Two bounded passes preserve global lightness correction, including for a region. */
+export async function resamplePhotonic(options: ResampleEngineOptions) {
+  const { src, srcW, srcH, destW, destH, shouldAbort, onProgress } = options;
+  const region = options.region ?? { x: 0, y: 0, w: destW, h: destH };
+  if (!options.region && destW === srcW && destH === srcH) return new Uint8ClampedArray(src);
+  const tables: Tables = {
+    lumaX: buildContribs(srcW, destW, "photonic", 3, destW < srcW ? DOWNSCALE_AA : 1),
+    lumaY: buildContribs(srcH, destH, "photonic", 3, destH < srcH ? DOWNSCALE_AA : 1),
+    chromaX: buildContribs(srcW, destW, "mitchell", 2),
+    chromaY: buildContribs(srcH, destH, "mitchell", 2),
+  };
+  if (destW < srcW || destH < srcH) return renderPass(options, tables);
+  const renderFields = async (area: typeof region) => {
     if (shouldAbort?.()) return null;
-    for (let sy = 0; sy < srcH; sy += 1) labRow(sy);
-    applyLumaConsistency({
-      destL,
-      destA,
-      destW: rw,
-      destH: rh,
-      srcL,
-      srcW,
-      srcH,
-      mn: destMn,
-      mx: destMx,
-    });
-    if (rw > srcW || rh > srcH) {
-      applyDestLumaSnap({
-        destL,
-        destA,
-        destW: rw,
-        destH: rh,
-        mn: destMn,
-        mx: destMx,
-      });
-    }
-    onProgress?.(0.85);
-    await yieldTick();
-    for (let band = 0; band < rh; band += BAND_ROWS) {
-      if (shouldAbort?.()) return null;
-      const bandH = Math.min(BAND_ROWS, rh - band);
-      for (let dy = 0; dy < bandH; dy += 1) {
-        for (let dx = 0; dx < rw; dx += 1) {
-          const pi = (band + dy) * rw + dx;
-          encodeLab(destL[pi], destCa[pi], destCb[pi], destA[pi], out, pi * 4);
-        }
+    const fields = makeFields(area.w * area.h);
+    await renderPass({ ...options, region: area, onProgress: undefined }, tables, fields);
+    return shouldAbort?.() ? null : fields;
+  };
+  const error = await createConsistencyError({ ...options, region }, renderFields, (index) => {
+    decodeLab(src, index * 4, labTmp, 0);
+    return labTmp[0];
+  });
+  if (!error || shouldAbort?.()) return null;
+  const out = new Uint8ClampedArray(region.w * region.h * 4);
+  const x = Math.max(0, region.x - 1);
+  const right = Math.min(destW, region.x + region.w + 1);
+  for (let row = 0; row < region.h; row += BAND_ROWS) {
+    if (shouldAbort?.()) return null;
+    const count = Math.min(BAND_ROWS, region.h - row);
+    const y = Math.max(0, region.y + row - 1);
+    const bottom = Math.min(destH, region.y + row + count + 1);
+    const area = { x, y, w: right - x, h: bottom - y };
+    const fields = await renderFields(area);
+    if (!fields) return null;
+    correctStrip(fields, area, options, error);
+    for (let dy = 0; dy < count; dy += 1) {
+      for (let dx = 0; dx < region.w; dx += 1) {
+        const i = (region.y + row + dy - y) * area.w + region.x + dx - x;
+        const di = ((row + dy) * region.w + dx) * 4;
+        encodeLab(fields.L[i], fields.ca[i], fields.cb[i], fields.A[i], out, di);
       }
-      onProgress?.(0.85 + (0.15 * (band + bandH)) / rh);
-      await yieldTick();
     }
+    onProgress?.(0.5 + (0.5 * (row + count)) / region.h);
+    await yieldTick();
   }
-
   return out;
 }

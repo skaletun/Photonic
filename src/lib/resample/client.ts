@@ -17,6 +17,7 @@ type Pending = {
   resolve: (value: ResampleResult) => void;
   reject: (error: Error) => void;
   onProgress?: (value: number) => void;
+  options: ResampleJobOptions;
 };
 
 type WorkerMessage =
@@ -39,6 +40,8 @@ export class ResampleClient {
   private seq = 0;
   private activeId = 0;
   private pending = new Map<number, Pending>();
+  private queue: number[] = [];
+  private activeKind = "";
 
   constructor() {
     this.worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
@@ -47,6 +50,8 @@ export class ResampleClient {
       const err = new AppError("worker_failed");
       for (const job of this.pending.values()) job.reject(err);
       this.pending.clear();
+      this.queue = [];
+      this.activeId = 0;
     });
   }
 
@@ -54,6 +59,9 @@ export class ResampleClient {
    * Передаёт буфер в worker (zero-copy). ImageData на главном потоке после этого непригоден.
    */
   setSource(imageData: ImageData) {
+    this.abortActive();
+    for (const id of this.queue) this.cancel(id);
+    this.queue = [];
     this.worker.postMessage(
       {
         type: "setSource",
@@ -77,20 +85,44 @@ export class ResampleClient {
   }
 
   resample(options: ResampleJobOptions, onProgress?: (value: number) => void) {
-    this.abortActive();
+    const protectedJob = this.activeKind === "export" && this.activeId !== 0;
+    if (protectedJob && options.kind === "loupe") return Promise.reject(this.abortError());
+    if (!protectedJob && this.activeId) this.abortActive();
+    for (const id of this.queue) this.cancel(id);
+    this.queue = [];
     const jobId = (this.seq += 1);
-    this.activeId = jobId;
 
     return new Promise<ResampleResult>((resolve, reject) => {
-      this.pending.set(jobId, { resolve, reject, onProgress });
-      this.worker.postMessage({ type: "resample", jobId, options });
+      this.pending.set(jobId, { resolve, reject, onProgress, options });
+      this.queue.push(jobId);
+      this.startNext();
     });
   }
 
   terminate() {
     this.abortActive();
+    for (const id of this.queue) this.cancel(id);
+    this.queue = [];
     this.worker.terminate();
     this.pending.clear();
+  }
+
+  private abortError() {
+    return Object.assign(new Error("aborted"), { name: "AbortError" });
+  }
+  private cancel(id: number) {
+    this.pending.get(id)?.reject(this.abortError());
+    this.pending.delete(id);
+  }
+  private startNext() {
+    if (this.activeId) return;
+    const id = this.queue.shift();
+    if (id === undefined) return;
+    const job = this.pending.get(id);
+    if (!job) return;
+    this.activeId = id;
+    this.activeKind = job.options.kind ?? "preview";
+    this.worker.postMessage({ type: "resample", jobId: id, options: job.options });
   }
 
   private handle(msg: WorkerMessage) {
@@ -103,7 +135,11 @@ export class ResampleClient {
     const job = this.pending.get(msg.jobId);
     if (!job) return;
     this.pending.delete(msg.jobId);
-    if (this.activeId === msg.jobId) this.activeId = 0;
+    if (this.activeId === msg.jobId) {
+      this.activeId = 0;
+      this.activeKind = "";
+    }
+    this.startNext();
 
     if (msg.type === "aborted") {
       job.reject(Object.assign(new Error("aborted"), { name: "AbortError" }));

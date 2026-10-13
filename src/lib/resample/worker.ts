@@ -1,9 +1,5 @@
-import { resamplePhotonic } from "./photonic";
-import { resampleSeparable } from "./separable";
+import { resampleFrame, type SourceFrame } from "./engine";
 import type { ResampleJobOptions } from "./types";
-import { unsharpMask } from "./unsharp";
-
-type SourceFrame = { width: number; height: number; data: Uint8ClampedArray };
 
 type Incoming =
   | { type: "abort"; jobId: number }
@@ -41,21 +37,10 @@ self.onmessage = async (event: MessageEvent<Incoming>) => {
   try {
     if (!source) throw new Error("source_missing");
 
-    const resample = opts.kernelId === "photonic" ? resamplePhotonic : resampleSeparable;
-    const pixels = await resample({
-      src: source.data,
-      srcW: source.width,
-      srcH: source.height,
-      destW: opts.destW,
-      destH: opts.destH,
-      kernelId: opts.kernelId ?? "photonic",
-      a: opts.a,
-      colorSpace: opts.kernelId === "photonic" ? "linear" : opts.colorSpace,
-      region: opts.region,
+    const pixels = await resampleFrame(source, opts, {
       shouldAbort,
       onProgress: (value) => {
-        if (shouldAbort()) return;
-        self.postMessage({ type: "progress", jobId, value });
+        if (!shouldAbort()) self.postMessage({ type: "progress", jobId, value });
       },
     });
 
@@ -66,15 +51,6 @@ self.onmessage = async (event: MessageEvent<Incoming>) => {
 
     const width = opts.region?.w ?? opts.destW;
     const height = opts.region?.h ?? opts.destH;
-
-    if (opts.unsharp?.enabled && opts.unsharp.amount > 0) {
-      unsharpMask(pixels, width, height, opts.unsharp);
-    }
-
-    if (shouldAbort()) {
-      self.postMessage({ type: "aborted", jobId });
-      return;
-    }
 
     self.postMessage(
       {

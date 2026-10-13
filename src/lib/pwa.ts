@@ -19,14 +19,44 @@ declare global {
 
 const INBOX = "photonic-inbox";
 
-export function registerServiceWorker() {
-  if (typeof window === "undefined") return;
-  if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
-  window.addEventListener("load", () => {
-    void navigator.serviceWorker.register(withBase("/sw.js"), {
-      scope: withBase("/"),
-    });
-  });
+export function registerServiceWorker(onUpdate?: (available: boolean) => void) {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !window.isSecureContext) return () => {};
+  let disposed = false;
+  let registration: ServiceWorkerRegistration | null = null;
+  const check = () => {
+    if (!disposed) onUpdate?.(Boolean(registration?.waiting && navigator.serviceWorker.controller));
+  };
+  const install = () => {
+    const worker = registration?.installing;
+    worker?.addEventListener("statechange", check);
+    check();
+  };
+  const register = () => {
+    void navigator.serviceWorker
+      .register(withBase("/sw.js"), { scope: withBase("/") })
+      .then((reg) => {
+        if (disposed) return;
+        registration = reg;
+        reg.addEventListener("updatefound", install);
+        install();
+      })
+      .catch(() => {});
+  };
+  if (document.readyState === "complete") register();
+  else window.addEventListener("load", register, { once: true });
+  return () => {
+    disposed = true;
+    window.removeEventListener("load", register);
+    registration?.removeEventListener("updatefound", install);
+  };
+}
+
+export async function applyAppUpdate() {
+  if (!("serviceWorker" in navigator)) return;
+  const registration = await navigator.serviceWorker.getRegistration(withBase("/"));
+  if (!registration?.waiting) return;
+  navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
+  registration.waiting.postMessage({ type: "SKIP_WAITING" });
 }
 
 export function bindFileLaunch(onFiles: (files: File[]) => void) {
@@ -39,7 +69,7 @@ export function bindFileLaunch(onFiles: (files: File[]) => void) {
 }
 
 export function themeColorFor(theme: "dark" | "light") {
-  return theme === "light" ? "#F3F0EA" : "#101214";
+  return theme === "light" ? "#f4f2ed" : "#181b1a";
 }
 
 export function isStandalone() {
@@ -52,8 +82,7 @@ export function isStandalone() {
 export function isIosSafari() {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
-  const ios =
-    /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   return ios && /WebKit/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
@@ -61,9 +90,7 @@ export async function drainShareInbox(): Promise<File[]> {
   if (typeof window === "undefined" || !("caches" in window)) return [];
   const cache = await caches.open(INBOX);
   const keys = await cache.keys();
-  const inbox = keys
-    .filter((req) => /\/inbox\//.test(req.url))
-    .sort((a, b) => a.url.localeCompare(b.url));
+  const inbox = keys.filter((req) => /\/inbox\//.test(req.url)).sort((a, b) => a.url.localeCompare(b.url));
   const files: File[] = [];
   for (const req of inbox) {
     const res = await cache.match(req);

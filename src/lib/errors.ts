@@ -15,6 +15,7 @@ export const ERROR_CODES = [
   "dest_hard",
   "dest_warn",
   "batch_too_large",
+  "memory_budget",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

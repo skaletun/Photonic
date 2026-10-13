@@ -9,11 +9,7 @@ import { AppError } from "../errors";
 export function formatToMime(format: ExportFormat, originalMime: string) {
   if (format === "original") {
     if (originalMime === "image/gif" || originalMime === "image/bmp") return "image/png";
-    if (
-      originalMime === "image/heic" ||
-      originalMime === "image/heif" ||
-      originalMime === "image/avif"
-    ) {
+    if (originalMime === "image/heic" || originalMime === "image/heif" || originalMime === "image/avif") {
       return "image/jpeg";
     }
     return originalMime;
@@ -30,7 +26,7 @@ export function extensionForMime(mime: string) {
   return "png";
 }
 
-export function encodeImageData(imageData: ImageData, mime: string, quality: number) {
+export function encodeImageData(imageData: ImageData, mime: string, quality: number, background = "#ffffff") {
   const canvas = document.createElement("canvas");
   canvas.width = imageData.width;
   canvas.height = imageData.height;
@@ -39,10 +35,20 @@ export function encodeImageData(imageData: ImageData, mime: string, quality: num
     return Promise.reject(new AppError("canvas_unavailable"));
   }
   if (mime === "image/jpeg") {
-    ctx.fillStyle = "#ffffff";
+    const foreground = document.createElement("canvas");
+    foreground.width = imageData.width;
+    foreground.height = imageData.height;
+    const foregroundCtx = foreground.getContext("2d");
+    if (!foregroundCtx) return Promise.reject(new AppError("canvas_unavailable"));
+    foregroundCtx.putImageData(imageData, 0, 0);
+    ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(foreground, 0, 0);
+    foreground.width = 0;
+    foreground.height = 0;
+  } else {
+    ctx.putImageData(imageData, 0, 0);
   }
-  ctx.putImageData(imageData, 0, 0);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -50,6 +56,10 @@ export function encodeImageData(imageData: ImageData, mime: string, quality: num
         canvas.width = 0;
         canvas.height = 0;
         if (!blob) {
+          reject(new AppError("encode_failed"));
+          return;
+        }
+        if (blob.type !== mime) {
           reject(new AppError("encode_failed"));
           return;
         }
