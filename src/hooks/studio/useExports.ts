@@ -42,6 +42,7 @@ export function useExports(
       const start = performance.now();
       const entries: { name: string; blob: Blob }[] = [];
       const used = new Set<string>();
+      const encodedIds: string[] = [];
       const scale = currentScale(s);
       let changedSource = false;
       let failures = 0;
@@ -117,8 +118,9 @@ export function useExports(
             totalBytes += entry.blob.size;
             if (mode !== "zip") entries.length = 0;
             entries.push(entry);
+            encodedIds.push(item.id);
             if (mode === "each" || mode === "current" || mode === "retry") downloadBlob(entry.blob, entry.name);
-            mark(item.id, "ready");
+            if (mode !== "zip") mark(item.id, "ready");
           } catch (error) {
             if (isAbortError(error) || signal.aborted) {
               mark(item.id, "waiting");
@@ -133,7 +135,10 @@ export function useExports(
           const name = mode === "zip" ? `photonic-batch-${s.kernel}.zip` : entries[0].name;
           const blob = mode === "zip" ? await zipBlobs(entries, signal) : entries[0].blob;
           signal.throwIfAborted();
-          if (mode === "zip") downloadBlob(blob, name);
+          if (mode === "zip") {
+            downloadBlob(blob, name);
+            for (const id of encodedIds) mark(id, "ready");
+          }
           const bytes = mode === "zip" ? blob.size : totalBytes;
           setDetails({ name, bytes, seconds: (performance.now() - start) / 1000 });
           runtime.status(
@@ -142,6 +147,7 @@ export function useExports(
           );
         } else runtime.status({ key: "studio.allFailed" }, "error");
       } catch (error) {
+        if (mode === "zip") for (const id of encodedIds) mark(id, signal.aborted ? "waiting" : "error");
         runtime.status(
           signal.aborted || isAbortError(error) ? { key: "studio.cancelled" } : statusFromError(error),
           signal.aborted ? undefined : "error",

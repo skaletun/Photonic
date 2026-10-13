@@ -375,3 +375,11 @@ input[type="color"] {
     grid-column: 1 / -1;
   }
 }
+
+@media (max-width: 960px) {
+  .enlarger input[type="number"],
+  .enlarger input[type="text"],
+  .enlarger select {
+    font-size: 16px;
+  }
+}

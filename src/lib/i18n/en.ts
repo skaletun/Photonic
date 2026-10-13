@@ -282,6 +282,7 @@ export const en = {
   "studio.afterEncoding": "Encoded file",
   "studio.labHint": "Use the loupe to pick a detail, then compare all methods on that area.",
   "studio.noSource": "Open an image to begin",
+  "studio.actualUnavailable": "Use the 1:1 loupe for images larger than the full preview.",
   "studio.actual": "Actual pixels",
   "error.memory_budget":
     "This image size needs more memory than this device can safely provide. Choose a smaller size.",

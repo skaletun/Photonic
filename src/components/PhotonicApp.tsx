@@ -96,6 +96,7 @@ export function PhotonicApp() {
               <Preview
                 ref={previewRef}
                 hasSource={state.hasSource}
+                overview={state.overview}
                 viewMode={state.viewMode}
                 kernel={state.kernel}
                 versusA={state.versusA}

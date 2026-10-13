@@ -53,6 +53,7 @@ test("layout, sample loading, both themes and accessible export", async ({ page 
   await ready(page);
   await expect(page.locator(".stage-empty")).toBeHidden();
   await expect(page.locator(".versus-tags")).toBeHidden();
+  await expect(page.getByRole("button", { name: "1:1", exact: true })).toBeDisabled();
   const button = page.getByRole("button", { name: "Скачать", exact: true });
   const rect = await button.boundingBox();
   const viewport = page.viewportSize()!;
@@ -60,6 +61,8 @@ test("layout, sample loading, both themes and accessible export", async ({ page 
   expect(rect!.x + rect!.width).toBeLessThanOrEqual(viewport.width);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("workspace.png"), animations: "disabled" });
+  if (testInfo.project.name.startsWith("mobile"))
+    await expect(page.getByLabel("Ширина, px", { exact: true })).toHaveCSS("font-size", "16px");
   expect(errors).toEqual([]);
 });
 
@@ -196,5 +199,6 @@ test("batch cancellation releases the worker and keeps originals", async ({ page
   await page.getByLabel("Ширина, px", { exact: true }).fill("32");
   await ready(page);
   await expect(page.locator('.document[data-status="processing"]')).toHaveCount(0);
+  await expect(page.locator('.document[data-status="ready"]')).toHaveCount(0);
   await expect(page.locator(".document")).toHaveCount(2);
 });

@@ -17,6 +17,7 @@ export type PreviewHandle = {
 
 export type PreviewProps = {
   hasSource: boolean;
+  overview: boolean;
   viewMode: ViewMode;
   kernel: KernelId;
   versusA: KernelId;

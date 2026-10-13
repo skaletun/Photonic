@@ -411,7 +411,7 @@ export function useCanvasPreview(props: PreviewProps, ref: ForwardedRef<PreviewH
     { applyTransform, loupeToolOn, resetView, setSplit, zoomTo, clearHoldPress, hideLoupe, fitScale, setLoupeOn },
   );
   const actualPixels = () => {
-    zoomRef.current = clampZoom(1 / fitScale());
+    zoomRef.current = 1 / fitScale();
     panXRef.current = 0;
     panYRef.current = 0;
     applyTransform();

@@ -106,7 +106,13 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
               {t(key)}
             </button>
           ))}
-          <button className="chip" type="button" title={t("studio.actual")} onClick={actualPixels}>
+          <button
+            className="chip"
+            type="button"
+            title={t(props.overview ? "studio.actualUnavailable" : "studio.actual")}
+            disabled={props.overview || viewMode === "grid"}
+            onClick={actualPixels}
+          >
             1:1
           </button>
           <button className="chip chip-fit" type="button" title={t("preview.fitHint")} onClick={() => resetView()}>
