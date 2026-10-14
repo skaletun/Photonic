@@ -26,7 +26,8 @@ export async function resampleFrame(
       h: Math.min(opts.destH, requested.y + requested.h + radius) - y,
     };
   }
-  const resample = opts.kernelId === "photonic" ? resamplePhotonic : resampleSeparable;
+  const isPhotonic = opts.kernelId === "photonic" || opts.kernelId === "photonic-tcr";
+  const resample = isPhotonic ? resamplePhotonic : resampleSeparable;
   const identity = opts.destW === source.width && opts.destH === source.height;
   let pixels: Uint8ClampedArray | null;
   if (identity) {
@@ -43,9 +44,10 @@ export async function resampleFrame(
       srcH: source.height,
       destW: opts.destW,
       destH: opts.destH,
-      kernelId: opts.kernelId,
+      kernelId: isPhotonic ? "photonic" : opts.kernelId,
+      coherent: opts.kernelId === "photonic-tcr",
       a: opts.a,
-      colorSpace: opts.kernelId === "photonic" ? "linear" : opts.colorSpace,
+      colorSpace: isPhotonic ? "linear" : opts.colorSpace,
       region,
       ...callbacks,
     });
