@@ -43,7 +43,7 @@ export function jobOptions(
     destH: state.destH,
     kernelId,
     a: state.lanczosA,
-    colorSpace: kernelId === "photonic" ? "linear" : state.colorSpace,
+    colorSpace: (kernelId === "photonic" || kernelId === "photonic-tcr") ? "linear" : state.colorSpace,
     unsharp: {
       enabled: state.unsharpEnabled,
       amount: state.unsharpAmount,
