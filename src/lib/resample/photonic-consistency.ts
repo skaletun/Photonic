@@ -144,6 +144,7 @@ export function applyDestLumaSnap(options: {
   const amount = options.amount ?? DEST_SNAP;
   if (!(amount > 0) || destW < 1 || destH < 1) return;
 
+  const sourceL = options.coherent ? new Float32Array(destL) : destL;
   const blur = new Float32Array(destL.length);
   for (let y = 0; y < destH; y += 1) {
     for (let x = 0; x < destW; x += 1) {
@@ -176,7 +177,7 @@ export function applyDestLumaSnap(options: {
     if (!(g > 0)) continue;
     const x = i % destW;
     const y = Math.floor(i / destW);
-    const tangent = options.coherent ? tangentResidual(destL, destA, destW, destH, x, y) : null;
+    const tangent = options.coherent ? tangentResidual(sourceL, destA, destW, destH, x, y) : null;
     const adaptive = tangent ? tangent.confidence : 0;
     const residual = tangent ? tangent.residual : 0;
     let next = destL[i] + g * ((1 - adaptive) * (destL[i] - blur[i]) + adaptive * residual);
