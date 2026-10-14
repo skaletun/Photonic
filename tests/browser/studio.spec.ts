@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { KERNEL_IDS } from "../../src/lib/config";
 const fixture = path.resolve("tests/fixtures/transparent.png");
 async function ready(page: Page) {
   await expect(page.locator(".bench")).toHaveAttribute("data-preview-ready", "true");
@@ -140,7 +141,7 @@ test("comparison, kernel grid and encoded preview", async ({ page }, testInfo) =
   await ready(page);
   await page.getByRole("button", { name: "Все методы", exact: true }).click();
   await ready(page);
-  await expect(page.locator(".compare-cell")).toHaveCount(7);
+  await expect(page.locator(".compare-cell")).toHaveCount(KERNEL_IDS.length);
   await page.screenshot({ path: testInfo.outputPath("lab.png"), animations: "disabled" });
   await page.getByRole("button", { name: "До / после", exact: true }).click();
   await ready(page);
