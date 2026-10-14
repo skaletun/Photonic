@@ -13,6 +13,6 @@ export function memoryBudget() {
 export function estimateWorkingBytes(srcW: number, srcH: number, destW: number, destH: number, kernel: KernelId) {
   const source = srcW * srcH;
   const dest = destW * destH;
-  const consistency = kernel === "photonic" && destW >= srcW && destH >= srcH ? source * 8 : 0;
+  const consistency = (kernel === "photonic" || kernel === "photonic-tcr") && destW >= srcW && destH >= srcH ? source * 8 : 0;
   return source * 4 + dest * 16 + consistency + Math.max(srcW, destW) * 8192 + 16 * 1024 * 1024;
 }
