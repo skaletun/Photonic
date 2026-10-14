@@ -21,6 +21,7 @@ export type ResampleEngineOptions = {
   destW: number;
   destH: number;
   kernelId?: string;
+  coherent?: boolean;
   a?: number;
   colorSpace?: ColorSpace;
   region?: Region;
