@@ -53,8 +53,8 @@ export function tangentResidual(
   const sample = (px: number, py: number): number => {
     const boundedX = Math.max(-1, Math.min(1, px));
     const boundedY = Math.max(-1, Math.min(1, py));
-    const x0 = Math.floor(boundedX);
-    const y0 = Math.floor(boundedY);
+    const x0 = Math.min(0, Math.floor(boundedX));
+    const y0 = Math.min(0, Math.floor(boundedY));
     const ux = boundedX - x0;
     const uy = boundedY - y0;
     return at(x0, y0) * (1 - ux) * (1 - uy) +
