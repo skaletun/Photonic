@@ -92,7 +92,7 @@ function sampleError(error: ErrorField, x: number, y: number) {
   );
 }
 
-export function correctStrip(fields: PhotonicFields, area: Region, options: ResampleEngineOptions, error: ErrorField) {
+export function correctStrip(fields: PhotonicFields, area: Region, options: ResampleEngineOptions, error: ErrorField, coherent = false) {
   const scaleX = options.destW / options.srcW;
   const scaleY = options.destH / options.srcH;
   for (let y = 0; y < area.h; y += 1) {
@@ -109,6 +109,6 @@ export function correctStrip(fields: PhotonicFields, area: Region, options: Resa
     }
   }
   if (options.destW > options.srcW || options.destH > options.srcH) {
-    applyDestLumaSnap({ destL: fields.L, destA: fields.A, destW: area.w, destH: area.h, mn: fields.mn, mx: fields.mx });
+    applyDestLumaSnap({ destL: fields.L, destA: fields.A, destW: area.w, destH: area.h, mn: fields.mn, mx: fields.mx, coherent });
   }
 }

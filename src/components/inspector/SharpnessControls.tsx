@@ -4,7 +4,7 @@ import { useT } from "@/hooks/useT";
 export function SharpnessControls({ beforeChange }: { beforeChange: () => void }) {
   const { state, dispatch } = useAppState();
   const { t: tr } = useT();
-  const photonic = state.kernel === "photonic";
+  const photonic = (state.kernel === "photonic" || state.kernel === "photonic-tcr");
   return (
     <details className="inspector-details advanced">
       <summary>{tr("studio.advanced")}</summary>

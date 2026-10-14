@@ -83,7 +83,7 @@ export function kernelFingerprint(state: UiState, kernelId: KernelId) {
     state.destH,
     kernelId,
     state.lanczosA,
-    kernelId === "photonic" ? "linear" : state.colorSpace,
+    (kernelId === "photonic" || kernelId === "photonic-tcr") ? "linear" : state.colorSpace,
     state.unsharpEnabled,
     state.unsharpAmount,
     state.unsharpRadius,

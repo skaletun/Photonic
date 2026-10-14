@@ -26,6 +26,7 @@ export const ACCEPT_EXT = [
 
 export const KERNEL_IDS = [
   "photonic",
+  "photonic-tcr",
   "nearest",
   "bilinear",
   "bicubic",

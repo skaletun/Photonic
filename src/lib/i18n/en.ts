@@ -121,6 +121,9 @@ export const en = {
   "kernel.photonic.use": "Photos, logos, text",
   "kernel.photonic.hint":
     "The default. Sharp edges and texture, without fake detail or heavy halos. Use this for photos, graphics, and type. Not for pixel art — pick nearest neighbour.",
+  "kernel.photonic-tcr.title": "Photonic TCR",
+  "kernel.photonic-tcr.use": "Experimental edge coherence",
+  "kernel.photonic-tcr.hint": "Photonic with tangent-coherent residual sharpening. Experimental: compare against the classic mode on fine texture and diagonal edges.",
   "kernel.nearest.title": "Nearest neighbor",
   "kernel.nearest.use": "Pixel art, 2× and 4×",
   "kernel.nearest.hint": "Keeps hard pixels. Best at whole 2× or 4×. Photos get stair-steps.",
