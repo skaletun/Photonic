@@ -4,6 +4,8 @@
  * Не цикл. Chroma не трогаем.
  */
 
+import { tangentResidual } from "./photonic-tcr";
+
 export const IBP_LAMBDA = 0.48;
 export const DEST_SNAP = 0.55;
 export const SPAN_REF = 0.1;
@@ -136,6 +138,7 @@ export function applyDestLumaSnap(options: {
   mn: Float32Array;
   mx: Float32Array;
   amount?: number;
+  coherent?: boolean;
 }) {
   const { destL, destA, destW, destH, mn, mx } = options;
   const amount = options.amount ?? DEST_SNAP;
@@ -171,7 +174,12 @@ export function applyDestLumaSnap(options: {
     const hi = mx[i];
     const g = amount * spanGain(lo, hi);
     if (!(g > 0)) continue;
-    let next = destL[i] + g * (destL[i] - blur[i]);
+    const x = i % destW;
+    const y = Math.floor(i / destW);
+    const tangent = options.coherent ? tangentResidual(destL, destA, destW, destH, x, y) : null;
+    const adaptive = tangent ? tangent.confidence : 0;
+    const residual = tangent ? tangent.residual : 0;
+    let next = destL[i] + g * ((1 - adaptive) * (destL[i] - blur[i]) + adaptive * residual);
     if (next < lo) next = lo;
     if (next > hi) next = hi;
     destL[i] = next;
