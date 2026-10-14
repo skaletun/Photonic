@@ -516,7 +516,7 @@ export async function resamplePhotonic(options: ResampleEngineOptions) {
     const area = { x, y, w: right - x, h: bottom - y };
     const fields = await renderFields(area);
     if (!fields) return null;
-    correctStrip(fields, area, options, error);
+    correctStrip(fields, area, options, error, options.coherent);
     for (let dy = 0; dy < count; dy += 1) {
       for (let dx = 0; dx < region.w; dx += 1) {
         const i = (region.y + row + dy - y) * area.w + region.x + dx - x;
