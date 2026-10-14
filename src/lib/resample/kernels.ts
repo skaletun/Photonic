@@ -111,6 +111,14 @@ export type KernelMeta = {
 };
 
 export const KERNELS: Record<string, KernelMeta> = {
+  "photonic-tcr": {
+    id: "photonic-tcr",
+    name: "Photonic TCR",
+    support: 3,
+    variableSupport: false,
+    interpolating: true,
+    fn: photonicKernel,
+  },
   photonic: {
     id: "photonic",
     name: "Photonic",
