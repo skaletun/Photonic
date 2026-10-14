@@ -15,7 +15,9 @@ test("TCR rejects transparent center pixels", () => {
   const l = Float32Array.from({ length: 25 }, (_, i) => i / 24);
   const a = new Float32Array(25).fill(1);
   a[12] = 0;
-  assert.deepEqual(tangentResidual(l, a, 5, 5, 2, 2), { residual: 0, confidence: 0 });
+  const result = tangentResidual(l, a, 5, 5, 2, 2);
+  assert.equal(result.residual, 0);
+  assert.equal(result.confidence, 0);
 });
 
 test("TCR confidence and residual remain finite on random and diagonal patterns", () => {
@@ -23,7 +25,9 @@ test("TCR confidence and residual remain finite on random and diagonal patterns"
   const l = Float32Array.from({ length: 81 }, (_, i) => ((i * 73 + 19) % 127) / 127);
   for (let y = 0; y < 9; y += 1) {
     for (let x = 0; x < 9; x += 1) {
-      const { residual, confidence } = tangentResidual(l, a, 9, 9, x, y);
+      const { residual, confidence, coherence, phase } = tangentResidual(l, a, 9, 9, x, y);
+      assert.ok(coherence >= 0 && coherence <= 1);
+      assert.ok(phase >= 0 && phase <= 1);
       assert.ok(Number.isFinite(residual));
       assert.ok(Number.isFinite(confidence));
       assert.ok(confidence >= 0 && confidence <= 1);
