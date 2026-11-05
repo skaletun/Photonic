@@ -53,6 +53,7 @@ test("layout, sample loading, both themes and accessible export", async ({ page 
   else await page.locator('input[type="file"]').setInputFiles(path.resolve("public/samples/photo.jpg"));
   await ready(page);
   await expect(page.locator(".stage-empty")).toBeHidden();
+  await expect(page.getByText(/Уменьшенный обзор/)).toBeVisible();
   await expect(page.locator(".versus-tags")).toBeHidden();
   await expect(page.getByRole("button", { name: "1:1", exact: true })).toBeDisabled();
   const button = page.getByRole("button", { name: "Скачать", exact: true });
