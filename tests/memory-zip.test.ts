@@ -20,6 +20,18 @@ it("uses a smaller budget for mobile and accounts for output encoding", () => {
   expect(memoryBudget()).toBe(256 * 1024 * 1024);
   expect(estimateWorkingBytes(1000, 1000, 8000, 8000, "photonic")).toBeGreaterThan(memoryBudget());
 });
+it("estimates peak phases rather than summing mutually exclusive allocations", () => {
+  const budget = 768 * 1024 * 1024;
+  // Real built-in photo sample at 2×: previously rejected despite bounded Photonic strips.
+  expect(estimateWorkingBytes(3060, 4080, 6120, 8160, "photonic")).toBeLessThan(budget);
+  // A substantially larger job must still be rejected on a typical desktop.
+  expect(estimateWorkingBytes(5000, 5000, 10000, 10000, "photonic")).toBeGreaterThan(budget);
+  // Photonic needs additional source-sized fields while resampling.
+  const photonic = estimateWorkingBytes(2048, 2048, 4096, 4096, "photonic");
+  const nearest = estimateWorkingBytes(2048, 2048, 4096, 4096, "nearest");
+  expect(photonic).toBeGreaterThanOrEqual(nearest);
+});
+
 it("writes UTF-8 ZIP entries with unique names and correct CRC", async () => {
   const payload = new Uint8Array([1, 2, 3]);
   const blob = await zipBlobs([
