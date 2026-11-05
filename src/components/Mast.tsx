@@ -27,7 +27,7 @@ export function Mast({
   }, [state.locale, t]);
   return (
     <header className="mast">
-      <a className="wordmark" href="./">
+      <a className="wordmark" href="./" aria-label="Photonic">
         <span className="brand-symbol" aria-hidden="true" />
         <span className="brand-name">Photonic</span>
         <span className="brand-edition">STUDIO</span>
