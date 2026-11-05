@@ -13,6 +13,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "bench:quality": "vitest run --config vitest.bench.config.ts",
     "test:browser": "playwright test"
   },
   "dependencies": {

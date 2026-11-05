@@ -13,7 +13,7 @@ export function KernelRail({
   lab: boolean;
 }) {
   const { state, dispatch } = useAppState();
-  const { t, kernelTitle, kernelHint } = useT();
+  const { t, kernelTitle, kernelHint, kernelUse } = useT();
   const support = kernelSupport(state.kernel, state.lanczosA);
   const points = Array.from(
     { length: 73 },
@@ -34,6 +34,7 @@ export function KernelRail({
         </select>
       </div>
       <p className="dock-hint">{kernelHint(state.kernel)}</p>
+      <p className="method-use"><strong>{t("studio.methodUse")}</strong> {kernelUse(state.kernel)}</p>
       <div className="field" hidden={!meta.variableSupport}>
         <label htmlFor="lanczos-a">{t("rail.windowA", { a: state.lanczosA })}</label>
         <input
