@@ -813,17 +813,25 @@ input[type="color"] { width: 44px; height: 38px; border-radius: 8px; }
   .compare-cell figcaption { font-size: 11px; }
 }
 @media (max-width: 540px) {
+  .mast-actions .icon-button { width: 34px; height: 34px; }
+  .wordmark .brand-symbol { width: 28px; height: 28px; }
   .sample-mosaic { display: none; }
   .wordmark .brand-name { font-size: 23px; }
   .mast { gap: 6px; }
   .workspace-switch button { min-height: 34px; padding: 0 7px; font-size: 11px; }
 }
-@media (max-width: 380px) {
+@media (max-width: 420px) {
+  .mast { gap: 5px; padding: 0 10px; }
+  .wordmark .brand-name { font-size: 20px; }
+  .workspace-switch button { padding: 0 5px; font-size: 10px; }
+  .mast-actions { gap: 2px; }
+  .mast-actions .icon-button { width: 32px; height: 34px; }
+  .lang-switch button { min-width: 25px; padding: 3px; }
+  .open-btn { width: 34px; height: 36px; min-height: 36px; }
+}
+@media (max-width: 360px) {
+  .wordmark .brand-name { display: none; }
   .wordmark .brand-symbol { width: 28px; height: 28px; }
-  .wordmark .brand-name { font-size: 21px; }
-  .mast-actions .help-btn { display: none; }
-  .lang-switch button { min-width: 26px; }
-  .open-btn { width: 36px; height: 36px; min-height: 36px; }
 }
 @media (max-height: 670px) and (max-width: 960px) {
   .stage-empty { padding: 10px; }
