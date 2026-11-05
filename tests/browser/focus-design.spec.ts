@@ -20,7 +20,8 @@ test("Focus interface keeps the primary workflow readable on desktop and phone",
   if (mobile) await expect(steps).toBeHidden();
   else await expect(steps).toBeVisible();
 
-  const open = page.getByRole("button", { name: "Открыть изображения", exact: true });
+  const open = page.locator(".mast .open-btn");
+  await expect(open).toHaveAttribute("aria-label", "Открыть изображения");
   await expect(open).toBeVisible();
   const openBox = await open.boundingBox();
   expect(openBox).not.toBeNull();
