@@ -103,7 +103,7 @@ export const ru: Messages = {
   "preview.gesture": "Тяните линию. Колесо — зум. Пробел — снова исходник.",
   "preview.gestureLook": "Колесо — зум. Пробел — снова исходник.",
   "preview.gestureLoupe": "Водите по снимку — 1:1. Иконка лупы выключает инструмент.",
-  "preview.badge": "Обзор",
+  "preview.badge": "Обзор · лупа 1:1",
   "preview.before": "До",
   "preview.after": "После",
   "preview.splitter": "Граница до и после",
