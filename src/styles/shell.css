@@ -314,14 +314,14 @@
   gap: 3px;
 }
 .document-copy strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
 }
 .document-copy > span {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-mute);
   display: flex;
   align-items: center;
@@ -336,8 +336,8 @@
   padding: 0 5px 2px;
 }
 .document-actions .icon-button {
-  width: 22px;
-  height: 22px;
+  width: 30px;
+  height: 28px;
 }
 .queue-empty {
   margin: auto 0;
