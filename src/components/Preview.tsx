@@ -137,7 +137,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
         <div className="zoom-readout" ref={zoomReadoutRef}>
           100%
         </div>
-        <span className="badge" ref={badgeRef} hidden>
+        <span className="badge" ref={badgeRef} title={t("studio.largePreviewHint")} hidden>
           {t("preview.badge")}
         </span>
 
