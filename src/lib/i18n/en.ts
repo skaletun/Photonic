@@ -101,7 +101,7 @@ export const en = {
   "preview.gesture": "Drag the line. Scroll to zoom. Hold Space to see the original.",
   "preview.gestureLook": "Scroll to zoom. Hold Space to see the original.",
   "preview.gestureLoupe": "Move over the picture for 1:1. Click the loupe icon to pan again.",
-  "preview.badge": "Overview",
+  "preview.badge": "Overview · loupe 1:1",
   "preview.before": "Before",
   "preview.after": "After",
   "preview.splitter": "Before and after divider",
