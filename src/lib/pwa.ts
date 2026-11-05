@@ -69,7 +69,7 @@ export function bindFileLaunch(onFiles: (files: File[]) => void) {
 }
 
 export function themeColorFor(theme: "dark" | "light") {
-  return theme === "light" ? "#f4f2ed" : "#181b1a";
+  return theme === "light" ? "#f1f5f9" : "#0e1823";
 }
 
 export function isStandalone() {
