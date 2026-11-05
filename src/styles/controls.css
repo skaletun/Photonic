@@ -80,7 +80,7 @@
   margin-bottom: 0;
 }
 .field label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-mute);
 }
 input[type="number"],
@@ -92,7 +92,7 @@ select {
   background: var(--field);
   border: 1px solid var(--line);
   border-radius: 5px;
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
 input:disabled,
@@ -106,7 +106,7 @@ select {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
   margin: 6px 0 12px;
 }
@@ -129,13 +129,13 @@ select {
   margin: 12px 0;
 }
 .chip {
-  min-height: 30px;
+  min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 5px;
   background: transparent;
   color: var(--text-mute);
   padding: 5px 10px;
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .chip[aria-pressed="true"] {
@@ -147,7 +147,7 @@ select {
   background: var(--ink-2);
 }
 .dock-hint {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   color: var(--text-mute);
   margin: 8px 0 12px;
@@ -382,4 +382,15 @@ input[type="color"] {
   .enlarger select {
     font-size: 16px;
   }
+}
+
+/* Make the method's existing use-case hint visible without adding another control. */
+.method-use {
+  margin: -3px 0 13px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.method-use strong {
+  font-weight: 600;
 }
