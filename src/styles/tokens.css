@@ -1,53 +1,79 @@
+/**
+ * Photonic Focus — 2026 design language.
+ * One semantic palette for the app shell, photo workspace and controls.
+ * Components use these tokens rather than embedding theme-specific colours.
+ */
 :root {
-  --font-display: "Instrument Serif", "Times New Roman", serif;
-  --font-ui: "IBM Plex Sans", "Segoe UI", sans-serif;
-  --duration: 160ms;
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --duration: 170ms;
+  --ease-out: cubic-bezier(0.2, 0.75, 0.22, 1);
   --split: 50%;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
 }
 html[data-theme="light"] {
-  --ink: #f4f2ed;
-  --ink-2: #eae7e0;
-  --plate: #faf9f6;
-  --paper: #242b2a;
-  --paper-dim: #66706b;
-  --text: #242b2a;
-  --text-mute: #66706b;
-  --signal: #246d64;
-  --signal-bright: #246d64;
-  --signal-soft: #e3eee9;
-  --danger: #ac443a;
-  --line: #d9dcd5;
-  --line-strong: #9aaba4;
-  --brass: #66706b;
-  --brass-deep: #86918a;
-  --field: #ffffff;
-  --canvas: #e3e4df;
-  --canvas-line: rgba(80, 94, 86, 0.055);
-  --shadow: 0 12px 40px rgba(30, 42, 34, 0.12);
-  --export-ink: #ffffff;
+  --ink: #F1F5F9;
+  --ink-2: #EAF0F6;
+  --plate: #FFFFFF;
+  --paper: #182B3F;
+  --paper-dim: #516579;
+  --text: #182B3F;
+  --text-mute: #50647A;
+  --signal: #176AA5;
+  --signal-bright: #176AA5;
+  --signal-soft: #E8F4FD;
+  --danger: #A72E47;
+  --line: #DCE5EE;
+  --line-strong: #AFC2D4;
+  --brass: #50647A;
+  --brass-deep: #8399AF;
+  --field: #F9FBFD;
+  --canvas: #E8EFF6;
+  --canvas-line: rgba(62, 97, 128, 0.09);
+  --shadow: 0 20px 50px rgba(24, 53, 82, 0.13);
+  --shadow-soft: 0 5px 22px rgba(25, 57, 88, 0.055);
+  --export-ink: #FFFFFF;
+  --focus-ring: #176AA5;
+  --surface-hover: #F3F8FC;
   color-scheme: light;
 }
 html[data-theme="dark"] {
-  --ink: #181b1a;
-  --ink-2: #222725;
-  --plate: #1c201e;
-  --paper: #edf0e9;
-  --paper-dim: #a6afa8;
-  --text: #edf0e9;
-  --text-mute: #a6afa8;
-  --signal: #83baa4;
-  --signal-bright: #83baa4;
-  --signal-soft: #2c3932;
-  --danger: #f19788;
-  --line: #343c36;
-  --line-strong: #687d6f;
-  --brass: #a6afa8;
-  --brass-deep: #687d6f;
-  --field: #252b27;
-  --canvas: #111513;
-  --canvas-line: rgba(180, 195, 185, 0.035);
-  --shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-  --export-ink: #13251b;
+  --ink: #0E1823;
+  --ink-2: #1B2B3A;
+  --plate: #152331;
+  --paper: #F0F6FD;
+  --paper-dim: #AEC2D6;
+  --text: #F0F6FD;
+  --text-mute: #AEC2D6;
+  --signal: #89CCFF;
+  --signal-bright: #89CCFF;
+  --signal-soft: #23425C;
+  --danger: #FF9BAB;
+  --line: #344657;
+  --line-strong: #5A7590;
+  --brass: #AEC2D6;
+  --brass-deep: #7394AF;
+  --field: #1B2C3C;
+  --canvas: #101D29;
+  --canvas-line: rgba(156, 188, 212, 0.085);
+  --shadow: 0 20px 50px rgba(0, 4, 12, 0.35);
+  --shadow-soft: 0 5px 22px rgba(0, 4, 12, 0.2);
+  --export-ink: #0D2638;
+  --focus-ring: #89CCFF;
+  --surface-hover: #21384C;
   color-scheme: dark;
 }
