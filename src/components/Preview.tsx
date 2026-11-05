@@ -204,6 +204,9 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
           ))}
         </div>
         <p className="work-hint">
+          {props.overview && viewMode !== "grid" ? (
+            <span className="overview-notice">{t("studio.largePreviewHint")}</span>
+          ) : null}
           {t(
             loupeOn
               ? "preview.gestureLoupe"
