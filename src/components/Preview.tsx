@@ -5,6 +5,7 @@ import { KERNEL_IDS, nextKernelId } from "@/lib/config";
 import { withBase } from "@/lib/base-path";
 import { SAMPLE_FILES } from "@/lib/samples";
 import { useT } from "@/hooks/useT";
+import { Icon } from "./Icon";
 import { useCanvasPreview } from "./preview/useCanvasPreview";
 import type { PreviewHandle, PreviewProps } from "./preview/types";
 export type { PreviewHandle } from "./preview/types";
@@ -37,6 +38,7 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
     <>
       <div className="stage-empty" hidden={hasSource} id="stage-empty">
         <div className="empty-copy">
+          <div className="empty-symbol" aria-hidden="true"><Icon name="image" /></div>
           <p className="empty-kicker">{t("empty.kicker")}</p>
           <h2>{t("studio.emptyTitle")}</h2>
           <p>{t("studio.emptyHint")}</p>
@@ -50,7 +52,13 @@ export const Preview = forwardRef<PreviewHandle, PreviewProps>(function Preview(
           >
             {t("empty.open")}
           </button>
+          <p className="empty-privacy"><Icon name="shield" />{t("studio.privacyLine")}</p>
         </div>
+        <ol className="welcome-steps" aria-label={t("studio.quickSteps")}>
+          <li><span>01</span>{t("empty.step1")}</li>
+          <li><span>02</span>{t("empty.step2")}</li>
+          <li><span>03</span>{t("empty.step3")}</li>
+        </ol>
         <div className="sample-mosaic" onClick={(event) => event.stopPropagation()}>
           <p className="sample-kicker">{t("empty.samples")}</p>
           {SAMPLE_FILES.map((sample) => {
