@@ -8,6 +8,7 @@ import "@/styles/shell.css";
 import "@/styles/controls.css";
 import "@/styles/preview.css";
 import "@/styles/site-notes.css";
+import "@/styles/focus.css";
 
 export const metadata: Metadata = {
   title: "Photonic — change image size in the browser",
@@ -40,8 +41,8 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F3F0EA" },
-    { media: "(prefers-color-scheme: dark)", color: "#101214" },
+    { media: "(prefers-color-scheme: light)", color: "#F1F5F9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0E1823" },
   ],
 };
 

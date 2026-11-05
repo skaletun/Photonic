@@ -27,14 +27,16 @@ export function Mast({
   }, [state.locale, t]);
   return (
     <header className="mast">
-      <a className="wordmark" href="./">
-        Photonic<span>STUDIO</span>
+      <a className="wordmark" href="./" aria-label="Photonic">
+        <span className="brand-symbol" aria-hidden="true" />
+        <span className="brand-name">Photonic</span>
+        <span className="brand-edition">STUDIO</span>
       </a>
       <div className="workspace-switch" role="group" aria-label={t("studio.title")}>
-        <button type="button" aria-pressed={!lab} onClick={() => onLab(false)}>
+        <button type="button" aria-pressed={!lab} title={t("studio.modeStudioHint")} onClick={() => onLab(false)}>
           Studio
         </button>
-        <button type="button" aria-pressed={lab} onClick={() => onLab(true)}>
+        <button type="button" aria-pressed={lab} title={t("studio.modeLabHint")} onClick={() => onLab(true)}>
           Lab
         </button>
       </div>
@@ -53,7 +55,7 @@ export function Mast({
             {t("studio.update")}
           </button>
         ) : null}
-        <button className="btn-primary open-btn" type="button" onClick={onOpen}>
+        <button className="btn-primary open-btn" type="button" aria-label={t("studio.open")} onClick={onOpen}>
           <Icon name="plus" />
           <span>{t("studio.open")}</span>
         </button>
