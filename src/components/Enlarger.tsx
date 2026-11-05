@@ -36,9 +36,12 @@ export function Enlarger(props: Props) {
   return (
     <aside className="enlarger" aria-label={t("enlarger.aria")} data-tab={tab}>
       <div className="inspector-heading">
-        <Icon name="sliders" />
-        <h2>{t("studio.settings")}</h2>
-        <span>{props.lab ? "LAB" : "STUDIO"}</span>
+        <span className="inspector-heading-icon"><Icon name="sliders" /></span>
+        <div className="inspector-heading-copy">
+          <h2>{t("studio.settings")}</h2>
+          <p>{t("studio.workflowHint")}</p>
+        </div>
+        <span className="inspector-mode">{props.lab ? "LAB" : "STUDIO"}</span>
       </div>
       <div className="mobile-tabs" role="tablist" aria-label={t("studio.settings")}>
         {(["size", "method", "export"] as const).map((item) => (
@@ -57,6 +60,7 @@ export function Enlarger(props: Props) {
       </div>
       <fieldset className="inspector-body" disabled={state.exporting}>
         <section className="inspector-section section-size" id="panel-size" aria-labelledby="tab-size">
+          <h3 className="section-step"><span>01</span>{t("enlarger.size")}</h3>
           <SizeControls beforeChange={props.beforeChange} onDestChange={props.onDestChange} />
           <PresetControls
             presets={props.presets}
@@ -68,11 +72,12 @@ export function Enlarger(props: Props) {
           <PrintControls beforeChange={props.beforeChange} onDestChange={props.onDestChange} />
         </section>
         <section className="inspector-section section-method" id="panel-method" aria-labelledby="tab-method">
+          <h3 className="section-step"><span>02</span>{t("studio.method")}</h3>
           <KernelRail onKernel={props.onKernel} beforeChange={props.beforeChange} lab={props.lab} />
           <SharpnessControls beforeChange={props.beforeChange} />
         </section>
         <section className="inspector-section section-export" id="panel-export" aria-labelledby="tab-export">
-          <span className="adv-label">{t("studio.export")}</span>
+          <h3 className="section-step"><span>03</span>{t("studio.export")}</h3>
           <ExportControls runtime={props.runtime} />
         </section>
       </fieldset>
