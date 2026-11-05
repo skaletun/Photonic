@@ -277,8 +277,9 @@
   bottom: 12px;
   left: 16px;
   margin: 0;
-  max-width: 310px;
-  font-size: 10px;
+  max-width: 390px;
+  font-size: 11px;
+  line-height: 1.45;
   color: var(--text);
   pointer-events: none;
   background: var(--plate);
@@ -295,7 +296,7 @@
   bottom: 12px;
   background: var(--signal-soft);
   color: var(--signal);
-  font-size: 9px;
+  font-size: 10px;
   padding: 6px 8px;
   border: 1px solid var(--line-strong);
   border-radius: 4px;
@@ -445,4 +446,11 @@
   .empty-copy p:not(.empty-kicker) {
     margin-bottom: 8px;
   }
+}
+
+.overview-notice {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--signal);
 }
